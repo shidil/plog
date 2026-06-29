@@ -57,6 +57,9 @@ func ParseLevel(s string) Level {
 type KV struct {
 	Key string
 	Val string
+	// Demoted marks a field the Columns stage judged constant across the recent
+	// window — noise that should recede behind the fields that distinguish lines.
+	Demoted bool
 }
 
 // FrameKind classifies a stack frame by origin so the renderer can foreground

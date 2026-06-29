@@ -35,8 +35,8 @@ func Template(rec record.Record) string {
 	return rec.Effective.String() + "\x00" + component(rec) + "\x00" + msg
 }
 
-// component returns the value plog groups by: the component field, falling back
-// to service, or "" when neither is present.
+// component returns the value plog groups folded runs by: the component field,
+// falling back to service, or "" when neither is present.
 func component(rec record.Record) string {
 	if v := fieldValue(rec, "component"); v != "" {
 		return v

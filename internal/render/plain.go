@@ -100,17 +100,24 @@ func (p *Plain) message(rec record.Record) string {
 	return flatten(msg)
 }
 
-// fields renders the remaining structured fields as key=val pairs in order.
+// fields renders the structured fields as key=val pairs, leading with the
+// fields that distinguish this line and trailing the ones the Columns stage
+// judged constant — dimmed and prefixed "·" so they recede. Within each group
+// source order is preserved.
 func (p *Plain) fields(rec record.Record) string {
-	var parts []string
+	var salient, demoted []string
 	for _, kv := range rec.Fields {
 		val := flatten(kv.Val)
 		if strings.ContainsAny(val, " \t\"") {
 			val = strconv.Quote(val)
 		}
-		parts = append(parts, p.paint(p.key, kv.Key+"=")+val)
+		if kv.Demoted {
+			demoted = append(demoted, p.paint(p.dim, "·"+kv.Key+"="+val))
+			continue
+		}
+		salient = append(salient, p.paint(p.key, kv.Key+"=")+val)
 	}
-	return strings.Join(parts, " ")
+	return strings.Join(append(salient, demoted...), " ")
 }
 
 // writeStack appends an indented frame block, surfacing project frames and

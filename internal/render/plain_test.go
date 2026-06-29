@@ -64,6 +64,30 @@ func TestRenderFoldCount(t *testing.T) {
 	}
 }
 
+func TestRenderDemotedFieldsTrailSalient(t *testing.T) {
+	rec := record.Record{
+		Level:     record.LevelInfo,
+		Effective: record.LevelInfo,
+		Message:   "finished call",
+		Parsed:    true,
+		Fields: []record.KV{
+			{Key: "service", Val: "location", Demoted: true},
+			{Key: "rpc.method", Val: "ResolveLocationSlug"},
+			{Key: "rpc.status", Val: "ok"},
+		},
+	}
+	got := renderOne(t, rec, PlainConfig{})
+
+	method := strings.Index(got, "rpc.method=")
+	demoted := strings.Index(got, "·service=")
+	if method < 0 || demoted < 0 {
+		t.Fatalf("output missing expected fields:\n%s", got)
+	}
+	if method > demoted {
+		t.Errorf("demoted field should trail salient fields:\n%s", got)
+	}
+}
+
 func TestRenderStackFoldsFrameworkSurfacesProject(t *testing.T) {
 	rec := record.Record{
 		Level:     record.LevelInfo,

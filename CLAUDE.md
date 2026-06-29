@@ -15,14 +15,14 @@ go test -run=^$ -fuzz=FuzzParseLine -fuzztime=30s ./internal/parse   # fuzz the 
 gofmt -l . && go vet ./...                 # format check + vet
 ```
 
-Run flags: `--module` (import-path prefix treated as project code, default `github.com/example`), `--no-fold`, `--expand-stack`, `--no-color`.
+Run flags: `--module` (import-path prefix treated as project code, default `github.com/example`), `--no-fold`, `--no-columns`, `--min-level`, `--grep`, `--field` (repeatable), `--expand-stack`, `--no-color`.
 
 ## Architecture
 
 A single-goroutine streaming pipeline in `cmd/plog/main.go`, one record at a time with bounded memory:
 
 ```
-stdin ─▶ parse ─▶ enrich.Severity ─▶ enrich.Stack ─▶ Folder.Add ─▶ render ─▶ stdout
+stdin ─▶ parse ─▶ enrich.Severity ─▶ enrich.Stack ─▶ Filter.Match ─▶ Columns.Mark ─▶ Folder.Add ─▶ render ─▶ stdout
 ```
 
 `internal/record.Record` is the canonical type every stage reads and returns — it has no behavior of its own, which keeps the stages independent.
@@ -31,7 +31,9 @@ Key design constraints a change must respect:
 
 - **Stream-only, by design.** When piped, stdin carries the log stream, so there is no interactive keyboard TUI — it cannot coexist with a live pipe. A future TUI (for a `plog <file>` case) is meant to be a second `render.Renderer` implementation, not a change to the pipeline. `render.Renderer` is the extension seam.
 - **Passthrough is sacred.** `parse.Line` never errors: a non-JSON or malformed line returns `Record{Parsed: false, Raw: line}` and the renderer emits it verbatim. A bad line must never interrupt or crash the tail. JSON is decoded with a token walk (not into a map) to preserve field order.
-- **Enrichment is pure.** `enrich.Severity` and `enrich.Stack` are `Record` in → `Record` out with no state, which is why their tests are trivial table tests. The one stateful piece is `enrich.Folder` (in `cluster.go`), which collapses consecutive runs and is the only stage holding cross-record state.
+- **Enrichment is pure.** `enrich.Severity` and `enrich.Stack` are `Record` in → `Record` out with no state, which is why their tests are trivial table tests. Two stages hold cross-record state: `enrich.Folder` (in `cluster.go`) collapses consecutive runs, and `enrich.Columns` (in `columns.go`) tracks a bounded window to flag constant fields.
+- **Adaptive columns demote, never drop.** `enrich.Columns.Mark` keeps a sliding window (default 256 records) of recent field sets and flags a field `Demoted` only with evidence — a single distinct value seen at least `minSeen` (3) times. New, rare, or varying fields stay salient, so signal is never hidden. Unlike `Folder` it adds no latency (it annotates and passes through); the renderer leads with salient fields and trails demoted ones dimmed. `--no-columns` disables it. It runs before `Folder` so the window sees every record, and because it only sets a flag (never changes a value) `Template`/folding are unaffected.
+- **Filtering selects, it does not enrich.** `internal/filter` is a separate, pure-predicate package (`Filter.Match`) depending only on `record`, not part of `enrich`. It runs after `Stack` (so `Effective` and `Message` are final) and before `Columns`/`Folder`, so the column window and fold runs reflect only what's displayed. `--min-level` compares `Effective` (the re-ranked level); `--field key=val` is a repeatable, case-insensitive substring over a named field's value (the record must carry that key) — it makes no assumption about which field names a stream uses, unlike a hardcoded "component" key would; `--grep` is a regexp over message + field values. Sacred-passthrough holds: `--min-level`/`--field` never drop a non-JSON line (their criteria are unknowable for it) — only `--grep`, matched against the raw line, can.
 - **Severity is re-ranked, never lowered.** `enrich.Severity` raises `Record.Effective` above the declared `Level` when message/error content matches escalation patterns (panic, nil pointer, connection refused, ...). An explicit `ERROR` stays `ERROR`. The renderer shows a re-rank as `INFO→ERR`.
 - **Stack-frame classification depends on `--module`.** `enrich.Stack` parses a Go trace embedded in a `msg` field and classifies each frame as project / third-party / stdlib. "Project" means the function *or file path* contains the module prefix; this is what surfaces `location_rpc.go:72` (`►`) and folds framework frames. Changing the default prefix changes what gets highlighted.
 

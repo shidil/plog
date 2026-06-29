@@ -20,8 +20,20 @@ This is a spike. It implements the four highest-leverage ideas from
   while stdlib/third-party frames fold to `… N framework frames (pkgs…)`.
 - **Consecutive-duplicate folding** — runs of near-identical lines (variable
   tokens masked: IPs, ports, hex, UUIDs, numbers) collapse to `… ×N`.
+- **Adaptive columns** — fields that stay constant across the recent window
+  (`service`, `rpc.component`, `rpc.service`) recede, dimmed and prefixed `·`,
+  while the fields that distinguish a line (`rpc.method`, `error`,
+  `rpc.status`, `rpc.duration`) lead it. Only fields with a single value seen
+  repeatedly are demoted — new or varying fields always stay prominent.
 - **Robust passthrough** — non-JSON or malformed lines are emitted verbatim; a
   bad line never interrupts the stream.
+- **Filtering** — `--min-level` (against the *re-ranked* level), `--grep` (a
+  regexp over message and field values), and `--field key=val` (a repeatable
+  substring match on any field you name) narrow the stream, combined with AND.
+  `--field` makes no assumption about a stream's field names — `--field
+  rpc.method=Resolve`, `--field logger=auth`, whatever your logs use. Non-JSON
+  lines are never dropped by `--min-level`/`--field`; only `--grep` (on the raw
+  line) can hide one.
 
 Color is applied only when stdout is a terminal.
 
@@ -33,6 +45,12 @@ plog [flags]            # reads stdin, writes stdout
 --module string         import-path prefix treated as project code
                         (default "github.com/example")
 --no-fold               do not collapse consecutive near-identical lines
+--no-columns            do not demote fields constant across the recent window
+--min-level string      drop parsed records below this effective severity
+                        (debug|info|warn|error)
+--grep string           show only lines matching this regular expression
+--field key=val         show only records whose named field contains a
+                        substring, e.g. --field rpc.method=Resolve (repeatable)
 --expand-stack          show every stack frame instead of folding
 --no-color              disable ANSI color even on a terminal
 ```
@@ -48,16 +66,17 @@ go run ./cmd/plog < testdata/sample.log
 A streaming pipeline, one record at a time, with bounded memory:
 
 ```
-stdin ──▶ parse ──▶ enrich ──▶ fold ──▶ render ──▶ stdout
-         (line→     (severity   (collapse  (lipgloss
-          Record)    + stack)    repeats)   line/block)
+stdin ──▶ parse ──▶ enrich ──────────▶ filter ──▶ fold ──▶ render ──▶ stdout
+         (line→     (severity + stack   (select   (collapse  (lipgloss
+          Record)    + columns)          lines)    repeats)   line/block)
 ```
 
 | Package            | Responsibility                                          |
 |--------------------|---------------------------------------------------------|
 | `internal/record`  | canonical `Record` type shared by every stage           |
 | `internal/parse`   | line → `Record` (ordered JSON walk, passthrough)        |
-| `internal/enrich`  | pure severity re-rank, stack-trace parse, fold/template |
+| `internal/enrich`  | severity re-rank, stack-trace parse, adaptive columns, fold |
+| `internal/filter`  | pure `Match` predicate (min-level, grep, field)         |
 | `internal/render`  | `Renderer` interface + streaming `Plain` (lipgloss)     |
 | `cmd/plog`         | flags, TTY detection, pipeline wiring                   |
 
