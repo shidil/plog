@@ -19,11 +19,13 @@ Run flags: `--module` (import-path prefix treated as project code, default `gith
 
 ## Architecture
 
-A single-goroutine streaming pipeline in `cmd/plog/main.go`, one record at a time with bounded memory:
+A streaming pipeline in `cmd/plog/main.go`, one record at a time with bounded memory:
 
 ```
 stdin ─▶ parse ─▶ enrich.Severity ─▶ enrich.Stack ─▶ Filter.Match ─▶ Columns.Mark ─▶ Folder.Add ─▶ render ─▶ stdout
 ```
+
+All record processing — every stage above — runs on one goroutine, so no stage holds shared state or needs locking. A second goroutine (`scanLines`) does nothing but read raw lines off stdin and hand them to the main loop over a channel; this exists only so the main loop can also wake on a timer (`flushInterval`) to flush a folded run that is still open — see the known trade-off below. The reader is stopped via a `done` channel on return, so an early exit never strands it.
 
 `internal/record.Record` is the canonical type every stage reads and returns — it has no behavior of its own, which keeps the stages independent.
 
@@ -39,7 +41,7 @@ Key design constraints a change must respect:
 
 ### Known trade-off
 
-`Folder` holds a run's first record until the run ends, so folded lines appear with one line of latency on a live tail (a quiet tail leaves the last repeated line unflushed until the next distinct line). `--no-fold` disables folding for zero-latency raw streaming. Do not "fix" this by buffering more — it is an intentional spike-scope choice.
+`Folder` holds a run's first record until a record with a different `Template` ends the run, so folded lines appear with one line of latency on a live tail. The run is otherwise only flushed at EOF — which a follow (`docker logs -f`) never reaches, so a `flushInterval` (1s) timer in the main loop emits any still-open run rather than hold it indefinitely. This matters most under filtering: a `--grep`/`--field`/`--min-level` that narrows the stream to one near-identical event leaves nothing distinct to end the run, so without the timer nothing printed until the pipe closed (the original "grep does nothing under `-f`" bug). The timer bounds that latency to ~1s; the cost is that a busy run's count splits across ticks (`×3` then `×5` …) instead of accumulating to one. `--no-fold` disables folding for zero-latency raw streaming. Bound the latency by flushing sooner (the timer), not by buffering more, which is an intentional spike-scope choice.
 
 ## Conventions
 

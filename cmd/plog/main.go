@@ -11,8 +11,10 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/shidil/plog/internal/enrich"
 	"github.com/shidil/plog/internal/filter"
@@ -24,6 +26,13 @@ import (
 // maxLine bounds a single log line; the embedded panic traces in real logs run
 // to a few KB, so the default bufio.Scanner limit is raised generously.
 const maxLine = 4 << 20 // 4 MiB
+
+// flushInterval caps how long Folder may hold a still-open run before it is
+// emitted. Without it, a live tail (docker logs -f) narrowed by a filter to one
+// near-identical event folds into a single run that no distinct line ever ends,
+// so nothing prints until EOF — which a follow never reaches. The tick bounds
+// that latency; counts then split across ticks instead of accumulating to one.
+const flushInterval = time.Second
 
 func main() {
 	module := flag.String("module", "github.com/example", "import-path prefix treated as project code in stack traces")
@@ -54,7 +63,10 @@ func main() {
 }
 
 // run drives the pipeline: each line is parsed, enriched, filtered, folded, and
-// rendered.
+// rendered. Lines are read on a separate goroutine so the main loop can also
+// wake on a timer and flush a folded run that is still open (see flushInterval);
+// all record processing stays on this one goroutine, so the pipeline holds no
+// shared state.
 func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, module string, fold, columns bool) error {
 	bw := bufio.NewWriter(out)
 	defer bw.Flush()
@@ -64,36 +76,82 @@ func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, 
 	folder := enrich.NewFolder(fold)
 
 	emit := func(recs []record.Record) error {
+		if len(recs) == 0 {
+			return nil
+		}
 		for _, rec := range recs {
 			if err := renderer.Render(rec); err != nil {
 				return err
 			}
 		}
-		return nil
+		// Flush per emit so a live tail stays responsive.
+		return bw.Flush()
 	}
 
-	sc := bufio.NewScanner(in)
-	sc.Buffer(make([]byte, 0, 64<<10), maxLine)
-	for sc.Scan() {
-		rec := parse.Line(sc.Text())
+	process := func(line string) error {
+		rec := parse.Line(line)
 		rec = enrich.Severity(rec)
 		rec = enrich.Stack(rec, module)
 		if !flt.Match(rec) {
-			continue
+			return nil
 		}
 		rec = cols.Mark(rec)
-		if err := emit(folder.Add(rec)); err != nil {
-			return err
-		}
-		// Flush per line so a live tail stays responsive.
-		if err := bw.Flush(); err != nil {
-			return err
+		return emit(folder.Add(rec))
+	}
+
+	done := make(chan struct{})
+	defer close(done)
+	lines, errc := scanLines(in, done)
+
+	ticker := time.NewTicker(flushInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case line, ok := <-lines:
+			if !ok {
+				// Input closed: emit the final run, then report any scan error.
+				if err := emit(folder.Flush()); err != nil {
+					return err
+				}
+				return <-errc
+			}
+			if err := process(line); err != nil {
+				return err
+			}
+		case <-ticker.C:
+			// A run still open after a full tick has waited long enough; emit it
+			// rather than hold it for a distinct line that a follow may never see.
+			if err := emit(folder.Flush()); err != nil {
+				return err
+			}
 		}
 	}
-	if err := emit(folder.Flush()); err != nil {
-		return err
-	}
-	return sc.Err()
+}
+
+// scanLines reads lines from in on its own goroutine and streams them on the
+// returned channel, which it closes at EOF. The scan error (nil on a clean EOF)
+// is delivered once on errc, which is buffered so the goroutine never blocks on
+// it. Closing done makes the goroutine stop and return even if no one is reading
+// lines, so an early return from run does not strand it.
+func scanLines(in io.Reader, done <-chan struct{}) (<-chan string, <-chan error) {
+	lines := make(chan string)
+	errc := make(chan error, 1)
+	go func() {
+		defer close(lines)
+		sc := bufio.NewScanner(in)
+		sc.Buffer(make([]byte, 0, 64<<10), maxLine)
+		for sc.Scan() {
+			select {
+			case lines <- sc.Text():
+			case <-done:
+				errc <- nil
+				return
+			}
+		}
+		errc <- sc.Err()
+	}()
+	return lines, errc
 }
 
 // fieldFlags collects repeated -field values into a slice, so -field may be
