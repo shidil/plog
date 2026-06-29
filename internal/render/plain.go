@@ -63,6 +63,10 @@ func (p *Plain) Render(rec record.Record) error {
 	b.WriteByte(' ')
 	b.WriteString(p.badge(rec))
 	b.WriteString("  ")
+	if rec.Corr != "" {
+		b.WriteString(p.paint(p.dim, "⟨"+rec.Corr+"⟩"))
+		b.WriteByte(' ')
+	}
 	b.WriteString(p.message(rec))
 	if rec.Repeat > 1 {
 		b.WriteString(p.paint(p.dim, fmt.Sprintf("  ×%d", rec.Repeat)))
@@ -73,6 +77,9 @@ func (p *Plain) Render(rec record.Record) error {
 	}
 	b.WriteByte('\n')
 
+	if rec.Related != nil {
+		fmt.Fprintf(&b, "    %s\n", p.paint(p.dim, relatedNote(rec.Related)))
+	}
 	if rec.Stack != nil {
 		p.writeStack(&b, rec.Stack)
 	}
@@ -118,6 +125,15 @@ func (p *Plain) fields(rec record.Record) string {
 		salient = append(salient, p.paint(p.key, kv.Key+"=")+val)
 	}
 	return strings.Join(append(salient, demoted...), " ")
+}
+
+// relatedNote formats a backward causal hint as an indented, dimmed line, e.g.
+// "↳ likely related: http: panic serving … @04:29:02".
+func relatedNote(r *record.Related) string {
+	if r.Time.IsZero() {
+		return "↳ likely related: " + r.Summary
+	}
+	return fmt.Sprintf("↳ likely related: %s @%s", r.Summary, r.Time.Format("15:04:05"))
 }
 
 // writeStack appends an indented frame block, surfacing project frames and

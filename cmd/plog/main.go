@@ -38,6 +38,7 @@ func main() {
 	module := flag.String("module", "github.com/example", "import-path prefix treated as project code in stack traces")
 	noFold := flag.Bool("no-fold", false, "do not collapse consecutive near-identical lines")
 	noColumns := flag.Bool("no-columns", false, "do not demote fields that stay constant across the recent window")
+	noCorrelate := flag.Bool("no-correlate", false, "do not group records by request or link an event to a recent related one")
 	expandStack := flag.Bool("expand-stack", false, "show every stack frame instead of folding framework frames")
 	noColor := flag.Bool("no-color", false, "disable ANSI color even on a terminal")
 	minLevel := flag.String("min-level", "", "drop parsed records below this effective severity (debug|info|warn|error)")
@@ -56,10 +57,24 @@ func main() {
 		Color:       !*noColor && isTerminal(os.Stdout),
 		ExpandStack: *expandStack,
 	}
-	if err := run(os.Stdin, os.Stdout, cfg, flt, *module, !*noFold, !*noColumns); err != nil {
+	opts := options{
+		module:    *module,
+		fold:      !*noFold,
+		columns:   !*noColumns,
+		correlate: !*noCorrelate,
+	}
+	if err := run(os.Stdin, os.Stdout, cfg, flt, opts); err != nil {
 		fmt.Fprintln(os.Stderr, "plog:", err)
 		os.Exit(1)
 	}
+}
+
+// options holds the enrich-stage toggles for a run, resolved from flags.
+type options struct {
+	module    string // import-path prefix treated as project code in stack traces
+	fold      bool   // collapse consecutive near-identical lines
+	columns   bool   // demote fields constant across the recent window
+	correlate bool   // group by request and link related events
 }
 
 // run drives the pipeline: each line is parsed, enriched, filtered, folded, and
@@ -67,13 +82,14 @@ func main() {
 // wake on a timer and flush a folded run that is still open (see flushInterval);
 // all record processing stays on this one goroutine, so the pipeline holds no
 // shared state.
-func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, module string, fold, columns bool) error {
+func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, opts options) error {
 	bw := bufio.NewWriter(out)
 	defer bw.Flush()
 
 	renderer := render.NewPlain(bw, cfg)
-	cols := enrich.NewColumns(columns)
-	folder := enrich.NewFolder(fold)
+	cor := enrich.NewCorrelator(opts.correlate)
+	cols := enrich.NewColumns(opts.columns)
+	folder := enrich.NewFolder(opts.fold)
 
 	emit := func(recs []record.Record) error {
 		if len(recs) == 0 {
@@ -91,10 +107,11 @@ func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, 
 	process := func(line string) error {
 		rec := parse.Line(line)
 		rec = enrich.Severity(rec)
-		rec = enrich.Stack(rec, module)
+		rec = enrich.Stack(rec, opts.module)
 		if !flt.Match(rec) {
 			return nil
 		}
+		rec = cor.Mark(rec)
 		rec = cols.Mark(rec)
 		return emit(folder.Add(rec))
 	}

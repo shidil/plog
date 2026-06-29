@@ -25,6 +25,14 @@ This is a spike. It implements the four highest-leverage ideas from
   while the fields that distinguish a line (`rpc.method`, `error`,
   `rpc.status`, `rpc.duration`) lead it. Only fields with a single value seen
   repeatedly are demoted — new or varying fields always stay prominent.
+- **Request correlation** — records that share a recent correlation key (an
+  explicit `trace_id`/`request_id`-style field, or the client IP in the message)
+  are tagged `⟨c…⟩` so one request reads as a group. And when a line follows a
+  recent, more severe event for the same method within a few seconds, it is
+  annotated `↳ likely related: …` — surfacing, e.g., the validation `finished
+  call` tied to the panic just before it. The link is a heuristic hint, looks
+  only backward (never reorders the stream), and is bounded in memory.
+  `--no-correlate` disables it.
 - **Robust passthrough** — non-JSON or malformed lines are emitted verbatim; a
   bad line never interrupts the stream.
 - **Filtering** — `--min-level` (against the *re-ranked* level), `--grep` (a
@@ -46,6 +54,7 @@ plog [flags]            # reads stdin, writes stdout
                         (default "github.com/example")
 --no-fold               do not collapse consecutive near-identical lines
 --no-columns            do not demote fields constant across the recent window
+--no-correlate          do not group records by request or link related events
 --min-level string      drop parsed records below this effective severity
                         (debug|info|warn|error)
 --grep string           show only lines matching this regular expression
@@ -66,16 +75,16 @@ go run ./cmd/plog < testdata/sample.log
 A streaming pipeline, one record at a time, with bounded memory:
 
 ```
-stdin ──▶ parse ──▶ enrich ──────────▶ filter ──▶ fold ──▶ render ──▶ stdout
-         (line→     (severity + stack   (select   (collapse  (lipgloss
-          Record)    + columns)          lines)    repeats)   line/block)
+stdin ──▶ parse ──▶ enrich ─────────────────▶ filter ──▶ correlate ──▶ fold ──▶ render ──▶ stdout
+         (line→     (severity + stack          (select   (group +       (collapse  (lipgloss
+          Record)    + columns)                 lines)    link)          repeats)   line/block)
 ```
 
 | Package            | Responsibility                                          |
 |--------------------|---------------------------------------------------------|
 | `internal/record`  | canonical `Record` type shared by every stage           |
 | `internal/parse`   | line → `Record` (ordered JSON walk, passthrough)        |
-| `internal/enrich`  | severity re-rank, stack-trace parse, adaptive columns, fold |
+| `internal/enrich`  | severity re-rank, stack parse, adaptive columns, request correlation, fold |
 | `internal/filter`  | pure `Match` predicate (min-level, grep, field)         |
 | `internal/render`  | `Renderer` interface + streaming `Plain` (lipgloss)     |
 | `cmd/plog`         | flags, TTY detection, pipeline wiring                   |
