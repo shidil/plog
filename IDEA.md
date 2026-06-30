@@ -122,6 +122,17 @@ slog / zap / zerolog / logrus / Python-logging / plain-text all normalized to
 one internal shape, so the same renderer works everywhere. Pass through
 non-JSON lines gracefully — a malformed line should never crash the tail.
 
+**logfmt / `key=value` parsing.** Structured-but-not-JSON: space-separated
+`ts=... level=info msg="..." rpc.method=...` pairs (Go kit, Heroku, logrus
+text mode, many others). Today these fall through as `Parsed: false` and are
+emitted verbatim — sacred passthrough holds, but none of the enrichment
+(severity, columns, folding, correlation) applies. logfmt is structurally
+close to what those stages already expect (ordered key/value pairs), so
+parsing it into the same `Record` lights up the whole pipeline for a large
+class of streams the spike currently passes through untouched. Detect by
+sniffing the line shape (bare `k=v` runs, no leading `{`) and preserve key
+order like the JSON token walk does.
+
 ### 16. Continuation-line gluing
 Heuristics to reattach stack traces that arrive as separate physical lines
 (not always wrapped in one JSON record like the sample).
