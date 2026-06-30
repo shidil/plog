@@ -92,6 +92,73 @@ func TestLineParsesTime(t *testing.T) {
 	}
 }
 
+func TestLineCanonAliases(t *testing.T) {
+	tests := []struct {
+		name      string
+		in        string
+		wantLevel record.Level
+		wantMsg   string
+		wantYear  int // 0 => expect zero time
+	}{
+		{
+			name:      "zap_style_ts_and_message",
+			in:        `{"ts":"2026-06-29T04:28:53Z","severity":"warn","message":"hi"}`,
+			wantLevel: record.LevelWarn,
+			wantMsg:   "hi",
+			wantYear:  2026,
+		},
+		{
+			name:      "unix_seconds_timestamp",
+			in:        `{"timestamp":"1751171333","level":"info","msg":"x"}`,
+			wantLevel: record.LevelInfo,
+			wantMsg:   "x",
+			wantYear:  2025,
+		},
+		{
+			name:      "zoneless_time_layout",
+			in:        `{"time":"2026-06-29T04:28:53","level":"error","msg":"y"}`,
+			wantLevel: record.LevelError,
+			wantMsg:   "y",
+			wantYear:  2026,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := Line(tc.in)
+			if !got.Parsed {
+				t.Fatalf("Line(%q).Parsed = false, want true", tc.in)
+			}
+			if got.Level != tc.wantLevel {
+				t.Errorf("Line(%q).Level = %v, want %v", tc.in, got.Level, tc.wantLevel)
+			}
+			if got.Message != tc.wantMsg {
+				t.Errorf("Line(%q).Message = %q, want %q", tc.in, got.Message, tc.wantMsg)
+			}
+			if tc.wantYear == 0 {
+				if !got.Time.IsZero() {
+					t.Errorf("Line(%q).Time = %v, want zero", tc.in, got.Time)
+				}
+			} else if y := got.Time.Year(); y != tc.wantYear {
+				t.Errorf("Line(%q).Time.Year() = %d, want %d", tc.in, y, tc.wantYear)
+			}
+		})
+	}
+}
+
+func TestLineUnknownLevelKeptAsField(t *testing.T) {
+	// A level value that is not a recognized severity stays an ordinary field
+	// rather than being dropped, so no information is lost.
+	got := Line(`{"level":"banana","msg":"x"}`)
+	if got.Level != record.LevelUnknown {
+		t.Errorf("Line.Level = %v, want LevelUnknown", got.Level)
+	}
+	want := []record.KV{{Key: "level", Val: "banana"}}
+	if !equalFields(got.Fields, want) {
+		t.Errorf("Line.Fields = %+v, want %+v", got.Fields, want)
+	}
+}
+
 func equalFields(got, want []record.KV) bool {
 	if len(got) != len(want) {
 		return false

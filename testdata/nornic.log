@@ -1,0 +1,1491 @@
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/04/28 04:06:35 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/04/28 04:06:35 🧠 Embed queue created (workers will start after DB warmup)
+2026/04/28 04:06:35 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/04/28 04:06:35 🕰️ Rebuilding temporal indexes before search warmup...
+2026/04/28 04:06:35 🧾 Rebuilding MVCC heads before search warmup...
+2026/04/28 04:06:35 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/04/28 04:06:35 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/04/28 04:06:35 🔍 Building BM25 + vector indexes for database nornic...
+2026/04/28 04:06:35 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/04/28 04:06:35 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/04/28 04:06:35 🔄 Loading embedding model: bge-m3 (local)...
+2026/04/28 04:06:35    → Server will start immediately, embeddings available after model loads
+2026/04/28 04:06:35 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/04/28 04:06:35 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 0 total nodes
+2026/04/28 04:06:35 📇 BuildIndexes: base index iteration complete (processed=0)
+2026/04/28 04:06:35 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/04/28 04:06:35 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+2026/04/28 04:06:35 📱 UI Browser enabled at /
+2026/04/28 04:06:35 📊 GraphQL API enabled at /graphql
+2026/04/28 04:06:35 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/04/28 04:06:36 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/04/28 04:06:36 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/04/28 04:06:36 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+[HTTP] GET /nornicdb/embed/stats 200 2.056438ms
+[HTTP] GET /nornicdb/embed/stats 200 2.077721ms
+[HTTP] GET /nornicdb/embed/stats 200 238.205µs
+[HTTP] GET /nornicdb/embed/stats 200 210.255µs
+[HTTP] GET /nornicdb/embed/stats 200 281.813µs
+[HTTP] GET /nornicdb/embed/stats 200 134.197µs
+[HTTP] GET /nornicdb/embed/stats 200 188.75µs
+[HTTP] GET /nornicdb/embed/stats 200 495.693µs
+[HTTP] GET /nornicdb/embed/stats 200 165.787µs
+[HTTP] GET /nornicdb/embed/stats 200 174.789µs
+[HTTP] GET /nornicdb/embed/stats 200 158.744µs
+2026/04/28 04:12:30 🔍 Search request database="nornic" query="skill ublish"
+[HTTP] POST /nornicdb/search 503 20.001041436s
+[HTTP] GET /nornicdb/embed/stats 200 310.315µs
+[HTTP] GET /nornicdb/embed/stats 200 228.184µs
+[HTTP] GET /nornicdb/embed/stats 200 149.594µs
+[HTTP] GET /nornicdb/embed/stats 200 167.637µs
+[HTTP] GET /nornicdb/embed/stats 200 170.805µs
+[HTTP] GET /nornicdb/embed/stats 200 432.699µs
+2026/04/28 04:13:42 🔍 Search request database="nornic" query="skill ublish"
+[HTTP] POST /nornicdb/search 200 2.835805198s
+[HTTP] GET /nornicdb/embed/stats 200 6.17519ms
+2026/04/28 04:16:37 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 50 total nodes
+2026/04/28 04:16:37 📇 BuildIndexes: base index iteration complete (processed=50)
+2026/04/28 04:16:37 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/04/28 04:16:37 🔍 Warming up vector search pipeline (52 vectors)...
+2026/04/28 04:16:37 🔍 Vector search strategy: CPU brute-force (N=52 vectors)
+2026/04/28 04:16:37 🔍 Vector search pipeline ready in 38.835µs
+[HTTP] GET /nornicdb/embed/stats 200 399.481µs
+2026/04/28 04:17:06 🔍 Search request database="nornic" query="skill publish fails"
+[HTTP] POST /nornicdb/search 200 10.77929ms
+2026/04/28 04:17:13 🔍 Search request database="nornic" query="skill publish fails"
+[HTTP] POST /nornicdb/search 200 1.040311ms
+2026/04/28 04:17:31 🔍 Search request database="nornic" query="skill publish fails"
+[HTTP] POST /nornicdb/search 200 3.123221ms
+2026/04/28 04:27:25 🔍 Search request database="nornic" query="skill ublish"
+[HTTP] POST /nornicdb/search 200 51.471779ms
+2026/04/28 04:27:46 🔍 Search request database="nornic" query="skill publish fails"
+[HTTP] POST /nornicdb/search 200 11.299362ms
+2026/04/28 04:28:56 🔍 Search request database="nornic" query="skill publish fails"
+[HTTP] POST /nornicdb/search 200 9.956646ms
+🔄 Processing node nornic:9f7afc40-fa92-4a79-b0cb-b23805afb2ab for embedding...
+✅ Embedded nornic:9f7afc40-fa92-4a79-b0cb-b23805afb2ab (1024 dims)
+🔄 Processing node nornic:121db149-d163-4ab8-a25b-3ab721bcbe49 for embedding...
+✅ Embedded nornic:121db149-d163-4ab8-a25b-3ab721bcbe49 (1024 dims)
+🔄 Processing node nornic:9f7afc40-fa92-4a79-b0cb-b23805afb2ab for embedding...
+✅ Embedded nornic:9f7afc40-fa92-4a79-b0cb-b23805afb2ab (1024 dims)
+🔄 Processing node nornic:9f7afc40-fa92-4a79-b0cb-b23805afb2ab for embedding...
+✅ Embedded nornic:9f7afc40-fa92-4a79-b0cb-b23805afb2ab (1024 dims)
+🔄 Processing node nornic:9f7afc40-fa92-4a79-b0cb-b23805afb2ab for embedding...
+✅ Embedded nornic:9f7afc40-fa92-4a79-b0cb-b23805afb2ab (1024 dims)
+🔄 Processing node nornic:02b11737-65f0-4249-acf3-e3737776e1dd for embedding...
+✅ Embedded nornic:02b11737-65f0-4249-acf3-e3737776e1dd (1024 dims)
+🔄 Processing node nornic:11260d4d-f52b-4b2f-a260-610142219cfd for embedding...
+✅ Embedded nornic:11260d4d-f52b-4b2f-a260-610142219cfd (1024 dims)
+🔄 Processing node nornic:254b4ebf-8f25-4a63-a4ef-18ac9cf886be for embedding...
+✅ Embedded nornic:254b4ebf-8f25-4a63-a4ef-18ac9cf886be (1024 dims)
+🔄 Processing node nornic:2afcaca3-b640-496d-8fd9-5b6b21bead90 for embedding...
+✅ Embedded nornic:2afcaca3-b640-496d-8fd9-5b6b21bead90 (1024 dims)
+🔄 Processing node nornic:33f24c1a-09d9-4fd0-8265-7c24cf3003ed for embedding...
+✅ Embedded nornic:33f24c1a-09d9-4fd0-8265-7c24cf3003ed (1024 dims)
+🔄 Processing node nornic:345d44aa-193b-4964-9dfd-abd42d42983f for embedding...
+✅ Embedded nornic:345d44aa-193b-4964-9dfd-abd42d42983f (1024 dims)
+🔄 Processing node nornic:35891090-f333-45cc-a8f3-f5f799c9a21e for embedding...
+✅ Embedded nornic:35891090-f333-45cc-a8f3-f5f799c9a21e (1024 dims)
+🔄 Processing node nornic:3a489bf4-61d5-4de4-b004-dd85e87def72 for embedding...
+✅ Embedded nornic:3a489bf4-61d5-4de4-b004-dd85e87def72 (1024 dims)
+🔄 Processing node nornic:3f5bfb02-d565-4d4f-a6f7-3d8429b0600d for embedding...
+✅ Embedded nornic:3f5bfb02-d565-4d4f-a6f7-3d8429b0600d (1024 dims)
+🔄 Processing node nornic:40c28ca3-046a-497e-be85-650800ce7fb8 for embedding...
+✅ Embedded nornic:40c28ca3-046a-497e-be85-650800ce7fb8 (1024 dims)
+🔄 Processing node nornic:46c25dfa-85b3-4f1f-a5df-74149b9d8c1e for embedding...
+✅ Embedded nornic:46c25dfa-85b3-4f1f-a5df-74149b9d8c1e (1024 dims)
+🔄 Processing node nornic:4a28d663-f6e9-475e-93de-86cb2e738b97 for embedding...
+[BOLT] RUN user=anonymous remote=192.168.165.1:50316 db=nornic status=ERROR rows=0 830.305µs err=failed to commit implicit transaction: constraint violation: Constraint violation (UNIQUE on PullRequest.[id]): Node with id=cli/cli!13296 already exists (nodeID: nornic:f389bf3f-ab07-4dcb-92e2-f8a2b1bc1ce1)
+✅ Embedded nornic:4a28d663-f6e9-475e-93de-86cb2e738b97 (1024 dims)
+🔄 Processing node nornic:52b5d7b5-4cad-41ab-a31e-15f900e87eef for embedding...
+✅ Embedded nornic:52b5d7b5-4cad-41ab-a31e-15f900e87eef (1024 dims)
+🔄 Processing node nornic:5678bc5e-1064-4184-9b20-6a14c7e84cdf for embedding...
+✅ Embedded nornic:5678bc5e-1064-4184-9b20-6a14c7e84cdf (1024 dims)
+🔄 Processing node nornic:59d697c5-5505-4204-abde-6e14ffd03e4a for embedding...
+✅ Embedded nornic:59d697c5-5505-4204-abde-6e14ffd03e4a (1024 dims)
+🔄 Processing node nornic:59e5ddde-f124-4d7b-91bc-af83fcb0b3d5 for embedding...
+✅ Embedded nornic:59e5ddde-f124-4d7b-91bc-af83fcb0b3d5 (1024 dims)
+🔄 Processing node nornic:6039cdce-039a-4ea8-af36-b135d2ee12ef for embedding...
+✅ Embedded nornic:6039cdce-039a-4ea8-af36-b135d2ee12ef (1024 dims)
+🔄 Processing node nornic:637f3520-08b7-4eca-9c18-f5fb02db684f for embedding...
+⚠️  Node nornic:637f3520-08b7-4eca-9c18-f5fb02db684f was deleted before embedding could be saved - skipping
+🔄 Processing node nornic:00f61411-e1dc-403d-a661-6131856ab037 for embedding...
+✅ Embedded nornic:00f61411-e1dc-403d-a661-6131856ab037 (1024 dims)
+🔄 Processing node nornic:03beb845-8a6d-44c1-b436-8d9c684b25c5 for embedding...
+✅ Embedded nornic:03beb845-8a6d-44c1-b436-8d9c684b25c5 (1024 dims)
+🔄 Processing node nornic:0b3f6892-060f-47dc-9613-cb2ee211a93e for embedding...
+✅ Embedded nornic:0b3f6892-060f-47dc-9613-cb2ee211a93e (1024 dims)
+🔄 Processing node nornic:24dedefc-3cc5-4902-ad83-eeb909958f4a for embedding...
+✅ Embedded nornic:24dedefc-3cc5-4902-ad83-eeb909958f4a (1024 dims)
+🔄 Processing node nornic:27ef8be1-1567-45f1-b9f6-542c7c29c764 for embedding...
+✅ Embedded nornic:27ef8be1-1567-45f1-b9f6-542c7c29c764 (1024 dims)
+🔄 Processing node nornic:543c7311-e311-4acf-8a48-9399d9335387 for embedding...
+✅ Embedded nornic:543c7311-e311-4acf-8a48-9399d9335387 (1024 dims)
+🔄 Processing node nornic:587a957e-48cc-46ee-86ed-fc83d5952e54 for embedding...
+✅ Embedded nornic:587a957e-48cc-46ee-86ed-fc83d5952e54 (1024 dims)
+🔄 Processing node nornic:5c07082f-970a-4574-bc18-3ac8896228c1 for embedding...
+✅ Embedded nornic:5c07082f-970a-4574-bc18-3ac8896228c1 (1024 dims)
+🔄 Processing node nornic:608a8552-439d-4b88-ba8a-d8b8d6676b58 for embedding...
+✅ Embedded nornic:608a8552-439d-4b88-ba8a-d8b8d6676b58 (1024 dims)
+🔄 Processing node nornic:69d91578-57db-466d-aea9-f035e1fddd45 for embedding...
+✅ Embedded nornic:69d91578-57db-466d-aea9-f035e1fddd45 (1024 dims)
+🔄 Processing node nornic:749ac88d-c960-4039-88ce-57182a3ac1e2 for embedding...
+✅ Embedded nornic:749ac88d-c960-4039-88ce-57182a3ac1e2 (1024 dims)
+🔄 Processing node nornic:7cb1e47f-7063-49c5-b8f3-d8332e8f21d2 for embedding...
+✅ Embedded nornic:7cb1e47f-7063-49c5-b8f3-d8332e8f21d2 (1024 dims)
+🔄 Processing node nornic:8a91d1b0-03eb-4df9-ad55-65aa0f652a0f for embedding...
+✅ Embedded nornic:8a91d1b0-03eb-4df9-ad55-65aa0f652a0f (1024 dims)
+🔄 Processing node nornic:8e5ec9c6-f785-4309-a36b-2f69d759a436 for embedding...
+✅ Embedded nornic:8e5ec9c6-f785-4309-a36b-2f69d759a436 (1024 dims)
+🔄 Processing node nornic:9bf9943b-4b58-487e-8977-c39f9fbb5225 for embedding...
+✅ Embedded nornic:9bf9943b-4b58-487e-8977-c39f9fbb5225 (1024 dims)
+🔄 Processing node nornic:9c5bf0cb-553c-4f5f-88cb-e6cfdd86ba75 for embedding...
+✅ Embedded nornic:9c5bf0cb-553c-4f5f-88cb-e6cfdd86ba75 (1024 dims)
+🔄 Processing node nornic:9db5e25e-04da-4b5f-8dfe-8821dd6e3820 for embedding...
+✅ Embedded nornic:9db5e25e-04da-4b5f-8dfe-8821dd6e3820 (1024 dims)
+🔄 Processing node nornic:a16b017d-6fd2-4c29-8e30-1643b241f1c1 for embedding...
+✅ Embedded nornic:a16b017d-6fd2-4c29-8e30-1643b241f1c1 (1024 dims)
+🔄 Processing node nornic:bfd24426-e5b7-4926-8ac0-768950ace060 for embedding...
+✅ Embedded nornic:bfd24426-e5b7-4926-8ac0-768950ace060 (1024 dims)
+🔄 Processing node nornic:cd9388d6-25ef-4921-9e3a-ef57ab07c19c for embedding...
+✅ Embedded nornic:cd9388d6-25ef-4921-9e3a-ef57ab07c19c (1024 dims)
+🔄 Processing node nornic:cdde3c59-19c4-4eaf-b4b0-a08af7ad0d5f for embedding...
+✅ Embedded nornic:cdde3c59-19c4-4eaf-b4b0-a08af7ad0d5f (1024 dims)
+🔄 Processing node nornic:ce1aaec1-aed4-4e97-a16f-b489ee11ba2e for embedding...
+✅ Embedded nornic:ce1aaec1-aed4-4e97-a16f-b489ee11ba2e (1024 dims)
+🔄 Processing node nornic:d61447c4-d7cd-427c-ac2d-ed120fa85d06 for embedding...
+✅ Embedded nornic:d61447c4-d7cd-427c-ac2d-ed120fa85d06 (1024 dims)
+🔄 Processing node nornic:d9082dea-cce3-497e-b54e-8f906e5ece0f for embedding...
+✅ Embedded nornic:d9082dea-cce3-497e-b54e-8f906e5ece0f (1024 dims)
+🔄 Processing node nornic:d922bb37-4ec8-42e5-a4cc-c701094b6c10 for embedding...
+✅ Embedded nornic:d922bb37-4ec8-42e5-a4cc-c701094b6c10 (1024 dims)
+🔄 Processing node nornic:d95e296b-690f-40d9-bb87-6a3610f0a393 for embedding...
+✅ Embedded nornic:d95e296b-690f-40d9-bb87-6a3610f0a393 (1024 dims)
+🔄 Processing node nornic:dbf7750f-e6bb-4aff-b300-2a3e77569296 for embedding...
+✅ Embedded nornic:dbf7750f-e6bb-4aff-b300-2a3e77569296 (1024 dims)
+🔄 Processing node nornic:e51c234c-4721-4274-b5cb-018e10545afe for embedding...
+✅ Embedded nornic:e51c234c-4721-4274-b5cb-018e10545afe (1024 dims)
+🔄 Processing node nornic:eceae836-da9b-4da6-a134-5f388e4fbd00 for embedding...
+✅ Embedded nornic:eceae836-da9b-4da6-a134-5f388e4fbd00 (1024 dims)
+🔄 Processing node nornic:f6aac48e-38bc-4fb5-b084-727d2e9625a5 for embedding...
+✅ Embedded nornic:f6aac48e-38bc-4fb5-b084-727d2e9625a5 (1024 dims)
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/04/28 06:00:20 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/04/28 06:00:20 🧠 Embed queue created (workers will start after DB warmup)
+2026/04/28 06:00:20 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/04/28 06:00:20 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/04/28 06:00:20 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/04/28 06:00:20 🧾 Rebuilding MVCC heads before search warmup...
+2026/04/28 06:00:20 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/04/28 06:00:20 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/04/28 06:00:20 🔄 Loading embedding model: bge-m3 (local)...
+2026/04/28 06:00:20    → Server will start immediately, embeddings available after model loads
+2026/04/28 06:00:20 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/04/28 06:00:20 📱 UI Browser enabled at /
+2026/04/28 06:00:20 📊 GraphQL API enabled at /graphql
+2026/04/28 06:00:20 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/04/28 06:00:20 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/04/28 06:00:20 🔍 Building BM25 + vector indexes for database nornic...
+2026/04/28 06:00:20 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 81 total nodes
+2026/04/28 06:00:20 📇 BuildIndexes: base index iteration complete (processed=81)
+2026/04/28 06:00:20 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/04/28 06:00:20 🔍 Warming up vector search pipeline (83 vectors)...
+2026/04/28 06:00:20 🔍 Vector search strategy: CPU brute-force (N=83 vectors)
+2026/04/28 06:00:20 🔍 Vector search pipeline ready in 8.25µs
+2026/04/28 06:00:20 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/04/28 06:00:20 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/04/28 06:00:20 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/04/28 06:00:20 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+2026/04/28 06:05:49 🔍 Search request database="nornic" query="skill publish fails"
+[HTTP] POST /nornicdb/search 200 61.024383ms
+[HTTP] GET /nornicdb/embed/stats 200 2.813903ms
+[HTTP] GET /nornicdb/embed/stats 200 3.640804ms
+[HTTP] GET /nornicdb/embed/stats 200 796.339µs
+[HTTP] GET /nornicdb/embed/stats 200 502.206µs
+[HTTP] GET /nornicdb/embed/stats 200 724.15µs
+[HTTP] GET /nornicdb/embed/stats 200 4.112831ms
+[HTTP] GET /nornicdb/embed/stats 200 298.59µs
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/04/28 22:32:45 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/04/28 22:32:45 🧠 Embed queue created (workers will start after DB warmup)
+2026/04/28 22:32:45 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/04/28 22:32:45 🕰️ Rebuilding temporal indexes before search warmup...
+2026/04/28 22:32:45 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/04/28 22:32:45 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/04/28 22:32:45 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/04/28 22:32:45 🔄 Loading embedding model: bge-m3 (local)...
+2026/04/28 22:32:45    → Server will start immediately, embeddings available after model loads
+2026/04/28 22:32:45 🧾 Rebuilding MVCC heads before search warmup...
+2026/04/28 22:32:45 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/04/28 22:32:45 📱 UI Browser enabled at /
+2026/04/28 22:32:45 📊 GraphQL API enabled at /graphql
+2026/04/28 22:32:45 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/04/28 22:32:45 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/04/28 22:32:45 🔍 Building BM25 + vector indexes for database nornic...
+2026/04/28 22:32:45 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/04/28 22:32:45 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/04/28 22:32:45 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/04/28 22:32:45 🔍 Warming up vector search pipeline (88 vectors)...
+2026/04/28 22:32:45 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/04/28 22:32:45 🔍 Vector search pipeline ready in 33.458µs
+2026/04/28 22:32:45 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/04/28 22:32:47 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/04/28 22:32:47 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/04/28 22:32:47 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/05/15 01:10:00 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/05/15 01:10:00 🧠 Embed queue created (workers will start after DB warmup)
+2026/05/15 01:10:00 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/05/15 01:10:00 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/05/15 01:10:00 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/05/15 01:10:00 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/05/15 01:10:00 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/05/15 01:10:00 🔄 Loading embedding model: bge-m3 (local)...
+2026/05/15 01:10:00    → Server will start immediately, embeddings available after model loads
+2026/05/15 01:10:00 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/05/15 01:10:00 🧾 Rebuilding MVCC heads before search warmup...
+2026/05/15 01:10:00 📱 UI Browser enabled at /
+2026/05/15 01:10:00 📊 GraphQL API enabled at /graphql
+2026/05/15 01:10:00 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/05/15 01:10:00 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/05/15 01:10:00 🔍 Building BM25 + vector indexes for database nornic...
+2026/05/15 01:10:00 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/05/15 01:10:00 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/05/15 01:10:00 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/05/15 01:10:00 🔍 Warming up vector search pipeline (88 vectors)...
+2026/05/15 01:10:00 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/05/15 01:10:00 🔍 Vector search pipeline ready in 21.291µs
+2026/05/15 01:10:00 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/05/15 01:10:02 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/05/15 01:10:02 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/05/15 01:10:02 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/05/15 01:10:43 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/05/15 01:10:43 🧠 Embed queue created (workers will start after DB warmup)
+2026/05/15 01:10:43 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/05/15 01:10:43 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/05/15 01:10:43 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/05/15 01:10:43 🧾 Rebuilding MVCC heads before search warmup...
+2026/05/15 01:10:43 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/05/15 01:10:43 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/05/15 01:10:43 🔄 Loading embedding model: bge-m3 (local)...
+2026/05/15 01:10:43    → Server will start immediately, embeddings available after model loads
+2026/05/15 01:10:43 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/05/15 01:10:43 📱 UI Browser enabled at /
+2026/05/15 01:10:43 📊 GraphQL API enabled at /graphql
+2026/05/15 01:10:43 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/05/15 01:10:43 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/05/15 01:10:43 🔍 Building BM25 + vector indexes for database nornic...
+2026/05/15 01:10:43 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/05/15 01:10:43 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/05/15 01:10:43 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/05/15 01:10:43 🔍 Warming up vector search pipeline (88 vectors)...
+2026/05/15 01:10:43 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/05/15 01:10:43 🔍 Vector search pipeline ready in 17.583µs
+2026/05/15 01:10:43 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/05/15 01:10:44 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/05/15 01:10:44 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/05/15 01:10:44 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/05/29 04:37:54 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/05/29 04:37:54 🧠 Embed queue created (workers will start after DB warmup)
+2026/05/29 04:37:54 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/05/29 04:37:54 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/05/29 04:37:54 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/05/29 04:37:54 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/05/29 04:37:54 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/05/29 04:37:54 🔄 Loading embedding model: bge-m3 (local)...
+2026/05/29 04:37:54    → Server will start immediately, embeddings available after model loads
+2026/05/29 04:37:54 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/05/29 04:37:54 📱 UI Browser enabled at /
+2026/05/29 04:37:54 📊 GraphQL API enabled at /graphql
+2026/05/29 04:37:54 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/05/29 04:37:54 🧾 Rebuilding MVCC heads before search warmup...
+2026/05/29 04:37:54 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/05/29 04:37:54 🔍 Building BM25 + vector indexes for database nornic...
+2026/05/29 04:37:54 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/05/29 04:37:54 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/05/29 04:37:54 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/05/29 04:37:54 🔍 Warming up vector search pipeline (88 vectors)...
+2026/05/29 04:37:54 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/05/29 04:37:54 🔍 Vector search pipeline ready in 24.917µs
+2026/05/29 04:37:54 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/05/29 04:37:56 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/05/29 04:37:56 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/05/29 04:37:56 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/04 01:40:32 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/04 01:40:32 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/04 01:40:32 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/06/04 01:40:32 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/04 01:40:32 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/04 01:40:32 🧾 Rebuilding MVCC heads before search warmup...
+2026/06/04 01:40:32 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/04 01:40:32 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/04 01:40:32 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/04 01:40:32    → Server will start immediately, embeddings available after model loads
+2026/06/04 01:40:32 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/04 01:40:32 📱 UI Browser enabled at /
+2026/06/04 01:40:32 📊 GraphQL API enabled at /graphql
+2026/06/04 01:40:32 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Bolt server listening on bolt://localhost:7687
+Press Ctrl+C to stop
+
+2026/06/04 01:40:32 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/04 01:40:32 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/04 01:40:32 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/06/04 01:40:32 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/04 01:40:32 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/04 01:40:32 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/04 01:40:32 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/04 01:40:32 🔍 Vector search pipeline ready in 30.792µs
+2026/06/04 01:40:32 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/04 01:40:34 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/04 01:40:34 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/04 01:40:34 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/04 12:03:06 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/04 12:03:06 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/04 12:03:06 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/06/04 12:03:06 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/04 12:03:06 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/04 12:03:06 🧾 Rebuilding MVCC heads before search warmup...
+2026/06/04 12:03:06 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/04 12:03:06 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/04 12:03:06 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/04 12:03:06    → Server will start immediately, embeddings available after model loads
+2026/06/04 12:03:06 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/04 12:03:06 📱 UI Browser enabled at /
+2026/06/04 12:03:06 📊 GraphQL API enabled at /graphql
+2026/06/04 12:03:06 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/06/04 12:03:06 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/04 12:03:06 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/04 12:03:06 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/06/04 12:03:06 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/04 12:03:06 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/04 12:03:06 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/04 12:03:06 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/04 12:03:06 🔍 Vector search pipeline ready in 21.375µs
+2026/06/04 12:03:06 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/04 12:03:07 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/04 12:03:07 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/04 12:03:07 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/04 13:14:12 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/04 13:14:12 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/04 13:14:12 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/06/04 13:14:12 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/04 13:14:12 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/04 13:14:12 🧾 Rebuilding MVCC heads before search warmup...
+2026/06/04 13:14:12 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/04 13:14:12 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/04 13:14:12 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/04 13:14:12    → Server will start immediately, embeddings available after model loads
+2026/06/04 13:14:12 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/04 13:14:12 📱 UI Browser enabled at /
+2026/06/04 13:14:12 📊 GraphQL API enabled at /graphql
+2026/06/04 13:14:12 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/06/04 13:14:12 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/04 13:14:12 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/04 13:14:12 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/06/04 13:14:12 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/04 13:14:12 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/04 13:14:12 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/04 13:14:12 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/04 13:14:12 🔍 Vector search pipeline ready in 13.334µs
+2026/06/04 13:14:12 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/04 13:14:13 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/04 13:14:13 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/04 13:14:13 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/04 22:42:58 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/04 22:42:58 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/04 22:42:58 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/06/04 22:42:58 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/04 22:42:58 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/04 22:42:58 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/04 22:42:58 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/04 22:42:58 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/04 22:42:58    → Server will start immediately, embeddings available after model loads
+2026/06/04 22:42:58 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/04 22:42:58 📱 UI Browser enabled at /
+2026/06/04 22:42:58 📊 GraphQL API enabled at /graphql
+2026/06/04 22:42:58 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/06/04 22:42:58 🧾 Rebuilding MVCC heads before search warmup...
+2026/06/04 22:42:58 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/04 22:42:58 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/04 22:42:58 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/06/04 22:42:58 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/04 22:42:58 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/04 22:42:58 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/04 22:42:58 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/04 22:42:58 🔍 Vector search pipeline ready in 4.542µs
+2026/06/04 22:42:58 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/04 22:42:59 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/04 22:42:59 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/04 22:42:59 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/11 22:47:33 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/11 22:47:33 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/11 22:47:33 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/06/11 22:47:33 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/11 22:47:33 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/11 22:47:33 🧾 Rebuilding MVCC heads before search warmup...
+2026/06/11 22:47:33 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/11 22:47:33 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/11 22:47:33 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/11 22:47:33    → Server will start immediately, embeddings available after model loads
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/11 22:47:33 ⚠️  Authentication disabled
+2026/06/11 22:47:33 📱 UI Browser enabled at /
+2026/06/11 22:47:33 📊 GraphQL API enabled at /graphql
+2026/06/11 22:47:33 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/06/11 22:47:33 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/11 22:47:33 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/11 22:47:33 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/06/11 22:47:33 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/11 22:47:33 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/11 22:47:33 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/11 22:47:33 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/11 22:47:33 🔍 Vector search pipeline ready in 8.042µs
+2026/06/11 22:47:33 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/11 22:47:35 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/11 22:47:35 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/11 22:47:35 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/17 22:26:35 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/17 22:26:35 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/17 22:26:35 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/06/17 22:26:35 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/17 22:26:35 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/17 22:26:35 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/17 22:26:35 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/17 22:26:35 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/17 22:26:35    → Server will start immediately, embeddings available after model loads
+2026/06/17 22:26:35 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/17 22:26:35 📱 UI Browser enabled at /
+2026/06/17 22:26:35 📊 GraphQL API enabled at /graphql
+2026/06/17 22:26:35 🧾 Rebuilding MVCC heads before search warmup...
+2026/06/17 22:26:35 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/06/17 22:26:36 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/17 22:26:36 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/17 22:26:36 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/06/17 22:26:36 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/17 22:26:36 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/17 22:26:36 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/17 22:26:36 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/17 22:26:36 🔍 Vector search pipeline ready in 7.917µs
+2026/06/17 22:26:36 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/17 22:26:37 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/17 22:26:37 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/17 22:26:37 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/21 23:58:01 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/21 23:58:01 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/21 23:58:01 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/06/21 23:58:01 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/21 23:58:01 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/21 23:58:01 🧾 Rebuilding MVCC heads before search warmup...
+2026/06/21 23:58:01 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/21 23:58:01 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/21 23:58:01 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/21 23:58:01    → Server will start immediately, embeddings available after model loads
+2026/06/21 23:58:01 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/21 23:58:01 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/21 23:58:01 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/21 23:58:01 📇 BuildIndexes: building from storage (vector index in memory)
+2026/06/21 23:58:01 📱 UI Browser enabled at /
+2026/06/21 23:58:01 📊 GraphQL API enabled at /graphql
+2026/06/21 23:58:01 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+📊 Indexed 86 total nodes
+2026/06/21 23:58:01 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/21 23:58:01 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/21 23:58:01 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/21 23:58:01 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/21 23:58:01 🔍 Vector search pipeline ready in 24.417µs
+2026/06/21 23:58:01 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/21 23:58:02 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/21 23:58:02 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/21 23:58:02 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/26 23:24:28 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/26 23:24:28 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/26 23:24:28 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/06/26 23:24:28 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/26 23:24:28 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/26 23:24:28 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/26 23:24:28 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/26 23:24:28 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/26 23:24:28    → Server will start immediately, embeddings available after model loads
+2026/06/26 23:24:28 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/26 23:24:28 🧾 Rebuilding MVCC heads before search warmup...
+2026/06/26 23:24:28 📱 UI Browser enabled at /
+2026/06/26 23:24:28 📊 GraphQL API enabled at /graphql
+2026/06/26 23:24:28 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/06/26 23:24:28 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/26 23:24:28 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/26 23:24:28 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/06/26 23:24:28 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/26 23:24:28 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/26 23:24:28 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/26 23:24:28 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/26 23:24:28 🔍 Vector search pipeline ready in 15.959µs
+2026/06/26 23:24:28 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/26 23:24:30 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/26 23:24:30 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/26 23:24:30 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/28 23:43:49 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/28 23:43:49 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/28 23:43:49 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+2026/06/28 23:43:49 🕰️ Rebuilding temporal indexes before search warmup...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/28 23:43:49 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/28 23:43:49 🧾 Rebuilding MVCC heads before search warmup...
+2026/06/28 23:43:49 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/28 23:43:49 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/28 23:43:49 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/28 23:43:49    → Server will start immediately, embeddings available after model loads
+2026/06/28 23:43:49 ⚠️  Authentication disabled
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/28 23:43:49 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/28 23:43:49 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/28 23:43:49 📇 BuildIndexes: building from storage (vector index in memory)
+2026/06/28 23:43:49 📱 UI Browser enabled at /
+2026/06/28 23:43:49 📊 GraphQL API enabled at /graphql
+2026/06/28 23:43:49 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+📊 Indexed 86 total nodes
+2026/06/28 23:43:49 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/28 23:43:49 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/28 23:43:49 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/28 23:43:49 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/28 23:43:49 🔍 Vector search pipeline ready in 10µs
+2026/06/28 23:43:49 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/28 23:43:51 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/28 23:43:51 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/28 23:43:51 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...
+
+🛑 Shutting down...
+🧠 Embed worker stopped
+✅ Server stopped gracefully
+ÃƒÂ¢Ã¢â‚¬Å¾Ã‚Â¹ÃƒÂ¯Ã‚Â¸Ã‚Â  No CUDA libraries detected - running in CPU mode
+📄 No config file found (using defaults + environment variables)
+🚀 Starting NornicDB v1.0.43
+   Data directory:  /data
+   Bolt protocol:   bolt://localhost:7687
+   HTTP API:        http://localhost:7474
+   Embeddings:      ✅ enabled (local, bge-m3, 1024 dims)
+   Embedding:       local GGUF (/app/models/bge-m3.gguf, 1024 dims, GPU: CPU only)
+   Parallel exec:   ✅ enabled (8 workers, batch size 1000)
+   Memory limit:    unlimited
+   Object pooling:  ✅ enabled
+   Query cache:     ✅ 1000 entries, TTL 5m0s
+
+📂 Opening database...
+🗜️  WAL auto-compaction enabled (snapshot interval: 5m0s)
+📂 Using persistent storage at /data (WAL + async writes, flush: 50ms, node cache: 50000, edge cache: 100000)
+📦 Wrapped storage with namespace 'nornic' (all operations are namespaced)
+   [Plugin Debug] Loading plugins from: /app/plugins (resolved from ./plugins)
+   [Plugin Debug] Found 1 .so files: [/app/plugins/apoc.so]
+╔══════════════════════════════════════════════════════════════╗
+║ Loading Plugins                                              ║
+╠══════════════════════════════════════════════════════════════╣
+║ ✓ [FUNC] apoc            v1.0.0    983 functions              ║
+╠══════════════════════════════════════════════════════════════╣
+║ Loaded: 1 plugins (1 function, 0 heimdall)                 ║
+║         983 Cypher functions available                         ║
+╚══════════════════════════════════════════════════════════════╝
+2026/06/30 02:08:00 🔍 Search services enabled (per-database init, 1024-dimension vector index)
+2026/06/30 02:08:00 🧠 Embed queue created (workers will start after DB warmup)
+2026/06/30 02:08:00 📇 Search: BM25 engine selected: v2
+🎮 Initializing GPU acceleration...
+   ⚠️  GPU disabled (CPU fallback active)
+2026/06/30 02:08:00 ⚠️  Remote credential encryption key fallback in use: using JWT signing secret. Set NORNICDB_REMOTE_CREDENTIALS_KEY for stronger key separation.
+2026/06/30 02:08:00 🕰️ Rebuilding temporal indexes before search warmup...
+2026/06/30 02:08:00 ℹ️  Heimdall AI Assistant disabled (set NORNICDB_HEIMDALL_ENABLED=true to enable)
+2026/06/30 02:08:00 ℹ️  Search rerank disabled (set NORNICDB_SEARCH_RERANK_ENABLED=true to enable Stage-2 reranking)
+2026/06/30 02:08:00 🔄 Loading embedding model: bge-m3 (local)...
+2026/06/30 02:08:00    → Server will start immediately, embeddings available after model loads
+2026/06/30 02:08:00 ⚠️  Authentication disabled
+2026/06/30 02:08:00 🧾 Rebuilding MVCC heads before search warmup...
+🧠 Loading local embedding model: /app/models/bge-m3.gguf
+   GPU layers: -1 (-1 = auto/all)
+2026/06/30 02:08:00 📱 UI Browser enabled at /
+2026/06/30 02:08:00 📊 GraphQL API enabled at /graphql
+2026/06/30 02:08:00 🚀 HTTP/2 enabled (h2c cleartext mode, backwards compatible with HTTP/1.1)
+
+✅ NornicDB is ready!
+
+Endpoints:
+  • HTTP API:     http://localhost:7474
+  • Bolt:         bolt://localhost:7687
+  • Health:       http://localhost:7474/health
+  • Search:       POST http://localhost:7474/nornicdb/search
+  • Cypher:       POST http://localhost:7474/db/nornicdb/tx/commit
+  • MCP:          http://localhost:7474/mcp
+
+
+Press Ctrl+C to stop
+
+Bolt server listening on bolt://localhost:7687
+2026/06/30 02:08:00 🔄 MVCC lifecycle manager enabled (cycle=30s)
+2026/06/30 02:08:00 🔍 Building BM25 + vector indexes for database nornic...
+2026/06/30 02:08:00 📇 BuildIndexes: building from storage (vector index in memory)
+📊 Indexed 86 total nodes
+2026/06/30 02:08:00 📇 BuildIndexes: base index iteration complete (processed=86)
+2026/06/30 02:08:00 📇 BuildIndexes: starting vector pipeline warmup (k-means may run)...
+2026/06/30 02:08:00 🔍 Warming up vector search pipeline (88 vectors)...
+2026/06/30 02:08:00 🔍 Vector search strategy: CPU brute-force (N=88 vectors)
+2026/06/30 02:08:00 🔍 Vector search pipeline ready in 25.667µs
+2026/06/30 02:08:00 ✅ BM25 + vector search indexes ready (default database)
+🧠 Embed queue workers started (after DB warmup)
+🧠 Embed worker started
+⏳ Waiting for embedding model to load...
+✅ Model loaded: bge-m3 (1024 dimensions)
+🔥 Model warmup enabled: every 5m0s
+2026/06/30 02:08:01 ✓ Embedding cache enabled: 10000 entries (~39MB)
+2026/06/30 02:08:01 ✅ Embeddings ready: local GGUF (bge-m3, 1024 dims)
+2026/06/30 02:08:01 🧠 Auto-embed queue started using bge-m3 (1024 dims)
+✅ Embedding model loaded, worker active
+🔍 Initial scan for nodes needing embeddings...

@@ -1,122 +1,180 @@
 // Package parse converts a single raw log line into a record.Record. It
-// recognizes JSON object lines (the common structured-logging shape) and
-// preserves field order; anything else is returned as a passthrough record so
-// a malformed or plain-text line never interrupts the stream.
+// recognizes JSON object lines and logfmt (key=value) lines, preserving field
+// order; anything else is returned as a passthrough record so a malformed or
+// plain-text line never interrupts the stream.
+//
+// Parsing is split into two concerns: a per-format decoder turns a line into an
+// ordered list of key/value pairs, and a shared canonicalizer (canon) pulls the
+// time/level/msg fields out by alias and keeps the rest in source order. The
+// canonicalizer is format-agnostic, so a new wire format only needs a decoder.
 package parse
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/shidil/plog/internal/record"
 )
 
-// Field keys carrying special meaning in the canonical record. Remaining keys
-// are kept verbatim in Record.Fields.
+// Format selects how a line is decoded. FormatAuto sniffs the line shape;
+// the others force a single decoder (or passthrough for FormatText).
+type Format int
+
+// Input formats.
 const (
-	keyTime  = "time"
-	keyLevel = "level"
-	keyMsg   = "msg"
+	FormatAuto   Format = iota // sniff JSON, then logfmt, else passthrough
+	FormatJSON                 // force JSON, passthrough on failure
+	FormatLogfmt               // force logfmt, passthrough on failure
+	FormatText                 // always passthrough
 )
 
-// Line parses one raw log line (without trailing newline) into a Record. It
-// never returns an error: an unrecognized or malformed line becomes a
-// passthrough record (Parsed == false) carrying the original text in Raw.
+// FormatFromString maps a --format flag value to a Format, reporting ok ==
+// false for an unrecognized name. An empty string means FormatAuto.
+func FormatFromString(s string) (Format, bool) {
+	switch s {
+	case "", "auto":
+		return FormatAuto, true
+	case "json":
+		return FormatJSON, true
+	case "logfmt":
+		return FormatLogfmt, true
+	case "text":
+		return FormatText, true
+	default:
+		return FormatAuto, false
+	}
+}
+
+// pair is one decoded key/value from a log line, in source order. Val is the
+// display string the decoder already flattened, so canon need not know which
+// wire format produced it.
+type pair struct {
+	key string
+	val string
+}
+
+// Line parses one raw log line (without trailing newline) into a Record by
+// auto-detecting its format. It never returns an error: an unrecognized or
+// malformed line becomes a passthrough record (Parsed == false) carrying the
+// original text in Raw.
 func Line(raw string) record.Record {
-	if trimmed := bytes.TrimSpace([]byte(raw)); len(trimmed) == 0 || trimmed[0] != '{' {
-		return record.Record{Raw: raw}
+	return LineAs(raw, FormatAuto)
+}
+
+// LineAs parses one raw log line using the given format. FormatAuto sniffs the
+// shape; an explicit format skips sniffing and falls through to a passthrough
+// record if its decoder cannot parse the line. It never returns an error.
+func LineAs(raw string, format Format) record.Record {
+	switch format {
+	case FormatJSON:
+		if pairs, ok := parseJSON(raw); ok {
+			return finish(raw, pairs)
+		}
+	case FormatLogfmt:
+		if pairs, ok := parseLogfmt(raw); ok {
+			return finish(raw, pairs)
+		}
+	case FormatText:
+		// Always passthrough.
+	default: // FormatAuto
+		trimmed := strings.TrimSpace(raw)
+		switch {
+		case sniffJSON(trimmed):
+			if pairs, ok := parseJSON(raw); ok {
+				return finish(raw, pairs)
+			}
+		case sniffLogfmt(trimmed):
+			if pairs, ok := parseLogfmt(raw); ok {
+				return finish(raw, pairs)
+			}
+		}
 	}
-	rec, ok := decodeObject(raw)
-	if !ok {
-		return record.Record{Raw: raw}
-	}
+	return record.Record{Raw: raw}
+}
+
+// finish assembles the canonical Record from decoded pairs and stamps the
+// fields every parsed record carries.
+func finish(raw string, pairs []pair) record.Record {
+	rec := canon(pairs)
 	rec.Raw = raw
 	rec.Parsed = true
 	rec.Effective = rec.Level
 	return rec
 }
 
-// decodeObject walks a JSON object as a token stream, decoding each value into
-// a json.RawMessage so field order is preserved and nested values stay intact.
-// It reports ok == false unless the line is exactly one well-formed object.
-func decodeObject(raw string) (record.Record, bool) {
-	dec := json.NewDecoder(bytes.NewReader([]byte(raw)))
-	dec.UseNumber()
+// Field-key aliases recognized for the canonical time/level/msg fields,
+// independent of wire format (zap uses ts, slog uses time, logfmt may use
+// timestamp). The first matching key wins; the rest stay as ordinary fields.
+var (
+	timeKeys  = set("time", "ts", "timestamp", "@timestamp", "t")
+	levelKeys = set("level", "lvl", "severity", "levelname")
+	msgKeys   = set("msg", "message")
+)
 
-	if tok, err := dec.Token(); err != nil || tok != json.Delim('{') {
-		return record.Record{}, false
+func set(keys ...string) map[string]bool {
+	m := make(map[string]bool, len(keys))
+	for _, k := range keys {
+		m[k] = true
 	}
+	return m
+}
 
+// canon maps decoded pairs into a Record: it pulls the first time/level/msg
+// alias out as typed fields and keeps every other pair in Fields in source
+// order. A time/level alias whose value does not parse stays an ordinary field
+// rather than being dropped, so no information is lost.
+func canon(pairs []pair) record.Record {
 	var rec record.Record
-	for dec.More() {
-		keyTok, err := dec.Token()
-		if err != nil {
-			return record.Record{}, false
-		}
-		key, ok := keyTok.(string)
-		if !ok {
-			return record.Record{}, false
-		}
-		var val json.RawMessage
-		if err := dec.Decode(&val); err != nil {
-			return record.Record{}, false
-		}
-		assign(&rec, key, val)
-	}
-	if _, err := dec.Token(); err != nil { // closing brace
-		return record.Record{}, false
-	}
-	if _, err := dec.Token(); err != io.EOF { // nothing may follow the object
-		return record.Record{}, false
-	}
-	return rec, true
-}
-
-// assign routes a value to the typed field it maps to, or appends it to Fields
-// in source order.
-func assign(rec *record.Record, key string, val json.RawMessage) {
-	switch key {
-	case keyTime:
-		if s, ok := asString(val); ok {
-			if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
+	for _, p := range pairs {
+		switch {
+		case timeKeys[p.key] && rec.Time.IsZero():
+			if t, ok := parseTime(p.val); ok {
 				rec.Time = t
-				return
+			} else {
+				rec.Fields = append(rec.Fields, record.KV{Key: p.key, Val: p.val})
 			}
+		case levelKeys[p.key] && rec.Level == record.LevelUnknown:
+			if lvl := record.ParseLevel(p.val); lvl != record.LevelUnknown {
+				rec.Level = lvl
+			} else {
+				rec.Fields = append(rec.Fields, record.KV{Key: p.key, Val: p.val})
+			}
+		case msgKeys[p.key] && rec.Message == "":
+			rec.Message = p.val
+		default:
+			rec.Fields = append(rec.Fields, record.KV{Key: p.key, Val: p.val})
 		}
-		rec.Fields = append(rec.Fields, record.KV{Key: key, Val: render(val)})
-	case keyLevel:
-		if s, ok := asString(val); ok {
-			rec.Level = record.ParseLevel(s)
-			return
-		}
-		rec.Fields = append(rec.Fields, record.KV{Key: key, Val: render(val)})
-	case keyMsg:
-		rec.Message = render(val)
-	default:
-		rec.Fields = append(rec.Fields, record.KV{Key: key, Val: render(val)})
 	}
+	return rec
 }
 
-// asString reports whether raw is a JSON string and, if so, its decoded value.
-func asString(raw json.RawMessage) (string, bool) {
-	var s string
-	if err := json.Unmarshal(raw, &s); err != nil {
-		return "", false
-	}
-	return s, true
+// timeLayouts are tried in order against a time-aliased value. logfmt and some
+// JSON producers omit the zone or use epoch numbers, so the list is broader
+// than a single RFC3339Nano.
+var timeLayouts = []string{
+	time.RFC3339Nano,
+	time.RFC3339,
+	"2006-01-02T15:04:05",
+	"2006-01-02 15:04:05",
 }
 
-// render produces the display text for a value: the unquoted contents for a
-// JSON string, otherwise the compacted JSON (numbers, bools, nested composites).
-func render(raw json.RawMessage) string {
-	if s, ok := asString(raw); ok {
-		return s
+// parseTime decodes a timestamp string, trying the textual layouts and then
+// 10-digit unix seconds / 13-digit unix milliseconds. It reports ok == false
+// when nothing matches, leaving the value to be kept as an ordinary field.
+func parseTime(s string) (time.Time, bool) {
+	for _, layout := range timeLayouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t, true
+		}
 	}
-	var buf bytes.Buffer
-	if err := json.Compact(&buf, raw); err != nil {
-		return string(raw)
+	if n, err := strconv.ParseInt(s, 10, 64); err == nil {
+		switch len(s) {
+		case 10:
+			return time.Unix(n, 0).UTC(), true
+		case 13:
+			return time.Unix(n/1000, (n%1000)*int64(time.Millisecond)).UTC(), true
+		}
 	}
-	return buf.String()
+	return time.Time{}, false
 }

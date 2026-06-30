@@ -43,9 +43,16 @@ func main() {
 	noColor := flag.Bool("no-color", false, "disable ANSI color even on a terminal")
 	minLevel := flag.String("min-level", "", "drop parsed records below this effective severity (debug|info|warn|error)")
 	grep := flag.String("grep", "", "show only lines matching this regular expression (message/fields, or raw for passthrough)")
+	format := flag.String("format", "auto", "input format: auto (sniff), json, logfmt, or text (passthrough)")
 	var fields fieldFlags
 	flag.Var(&fields, "field", "show only records whose named field contains a substring, e.g. -field rpc.method=Resolve (repeatable)")
 	flag.Parse()
+
+	inFormat, ok := parse.FormatFromString(*format)
+	if !ok {
+		fmt.Fprintf(os.Stderr, "plog: unknown -format %q: want auto, json, logfmt, or text\n", *format)
+		os.Exit(1)
+	}
 
 	flt, err := filter.New(*minLevel, *grep, fields)
 	if err != nil {
@@ -58,6 +65,7 @@ func main() {
 		ExpandStack: *expandStack,
 	}
 	opts := options{
+		format:    inFormat,
 		module:    *module,
 		fold:      !*noFold,
 		columns:   !*noColumns,
@@ -69,12 +77,13 @@ func main() {
 	}
 }
 
-// options holds the enrich-stage toggles for a run, resolved from flags.
+// options holds the parse/enrich toggles for a run, resolved from flags.
 type options struct {
-	module    string // import-path prefix treated as project code in stack traces
-	fold      bool   // collapse consecutive near-identical lines
-	columns   bool   // demote fields constant across the recent window
-	correlate bool   // group by request and link related events
+	format    parse.Format // how each line is decoded (auto-sniff by default)
+	module    string       // import-path prefix treated as project code in stack traces
+	fold      bool         // collapse consecutive near-identical lines
+	columns   bool         // demote fields constant across the recent window
+	correlate bool         // group by request and link related events
 }
 
 // run drives the pipeline: each line is parsed, enriched, filtered, folded, and
@@ -105,7 +114,7 @@ func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, 
 	}
 
 	process := func(line string) error {
-		rec := parse.Line(line)
+		rec := parse.LineAs(line, opts.format)
 		rec = enrich.Severity(rec)
 		rec = enrich.Stack(rec, opts.module)
 		if !flt.Match(rec) {
