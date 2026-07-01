@@ -128,6 +128,119 @@ func TestStackNonTraceUnchanged(t *testing.T) {
 	}
 }
 
+func TestStackFromField(t *testing.T) {
+	// Structured loggers carry the trace in a dedicated field rather than the
+	// message; it must be lifted into Stack and the field consumed so it is not
+	// also rendered raw.
+	tests := []struct {
+		name     string
+		traceKey string
+	}{
+		{name: "stack_field", traceKey: "stack"},
+		{name: "error_field", traceKey: "error"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := mkRec(record.LevelError, "request failed",
+				record.KV{Key: "rpc", Val: "ResolveLocationSlug"},
+				record.KV{Key: tc.traceKey, Val: sampleTrace},
+			)
+			got := Stack(rec, "github.com/example")
+			if got.Stack == nil {
+				t.Fatalf("Stack did not lift a trace from the %q field", tc.traceKey)
+			}
+			if len(got.Stack.Frames) != 4 {
+				t.Errorf("got %d frames, want 4: %+v", len(got.Stack.Frames), got.Stack.Frames)
+			}
+			want := []record.KV{{Key: "rpc", Val: "ResolveLocationSlug"}}
+			if !equalKV(got.Fields, want) {
+				t.Errorf("Fields = %+v, want only the untouched rpc field %+v", got.Fields, want)
+			}
+		})
+	}
+}
+
+func TestStackFromFieldUsesMessageHeader(t *testing.T) {
+	// A field holding only the trace (no panic line of its own) has no header;
+	// the record's message stands in as the summary shown in place of it.
+	bareTrace := "goroutine 1 [running]:\n" +
+		"github.com/example/app.run()\n" +
+		"\tgithub.com/example/app/main.go:20 +0x1a"
+	rec := mkRec(record.LevelError, "request failed", record.KV{Key: "stack", Val: bareTrace})
+
+	got := Stack(rec, "github.com/example")
+	if got.Stack == nil {
+		t.Fatal("Stack did not lift a trace from the stack field")
+	}
+	if got.Stack.Header != "request failed" {
+		t.Errorf("Header = %q, want the record message as fallback", got.Stack.Header)
+	}
+}
+
+func TestStackFieldNotLifted(t *testing.T) {
+	// A multi-line field value that is not a trace must be left in place: neither
+	// the fast-reject marker check nor the parser should claim it.
+	tests := []struct {
+		name string
+		val  string
+	}{
+		{name: "no_marker", val: "meet me at the office\nsee you there"},
+		{name: "marker_but_not_a_trace", val: "goroutine leak suspected\nplease investigate"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			rec := mkRec(record.LevelInfo, "note", record.KV{Key: "note", Val: tc.val})
+			got := Stack(rec, "github.com/example")
+			if got.Stack != nil {
+				t.Errorf("Stack lifted a non-trace field: %+v", got.Stack)
+			}
+			if len(got.Fields) != 1 {
+				t.Errorf("field wrongly consumed: Fields = %+v", got.Fields)
+			}
+		})
+	}
+}
+
+func FuzzStackField(f *testing.F) {
+	seeds := []string{
+		"",
+		"plain text",
+		sampleTrace,
+		"goroutine 1 [running]:\nmain.x()\n\t/a/b.go:1 +0x1",
+		"goroutine\n\n",
+		"at foo (index.js:1:1)",
+	}
+	for _, s := range seeds {
+		f.Add(s)
+	}
+	f.Fuzz(func(t *testing.T, val string) {
+		rec := mkRec(record.LevelInfo, "msg", record.KV{Key: "stack", Val: val})
+		got := Stack(rec, "github.com/example")
+		// Invariant: lifting a stack consumes exactly its source field; not
+		// lifting leaves the fields untouched.
+		if got.Stack != nil {
+			if len(got.Fields) != 0 {
+				t.Errorf("stack lifted from %q but field not consumed: %+v", val, got.Fields)
+			}
+		} else if len(got.Fields) != 1 {
+			t.Errorf("no stack lifted from %q but fields changed: %+v", val, got.Fields)
+		}
+	})
+}
+
+// equalKV reports whether two field slices are identical in order and content.
+func equalKV(got, want []record.KV) bool {
+	if len(got) != len(want) {
+		return false
+	}
+	for i := range got {
+		if got[i] != want[i] {
+			return false
+		}
+	}
+	return true
+}
+
 func TestTemplateMasksVariableTokens(t *testing.T) {
 	a := Severity(mkRec(record.LevelInfo, "dial tcp [::1]:4317: connection refused"))
 	b := Severity(mkRec(record.LevelInfo, "dial tcp [::1]:9999: connection refused"))
