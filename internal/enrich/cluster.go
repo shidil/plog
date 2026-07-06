@@ -44,16 +44,39 @@ func component(rec record.Record) string {
 	return fieldValue(rec, "service")
 }
 
-// Folder collapses consecutive records that share a Template into a single
-// record whose Repeat count reflects the run length. It holds the current run's
-// first record until the run ends, trading one line of latency for clean
-// counts; folding is skipped entirely when disabled or for passthrough lines.
+// foldWindow is how many intervening records of other templates a run tolerates
+// before it is considered ended. A run that recurs at least this often keeps
+// folding even when another event type interleaves with it — so the common
+// request-log / result-log pairing (A, B, A, B, ...) collapses to A×n and B×n
+// rather than defeating folding entirely. Head latency is bounded by the
+// caller's flush timer, not by this window.
+const foldWindow = 10
+
+// maxOpenRuns caps how many distinct templates fold concurrently, keeping memory
+// flat when many event types interleave; the oldest run is flushed to make room.
+const maxOpenRuns = 8
+
+// foldRun is one open run: a head record standing in for its repetitions, the
+// template that identifies them, the count so far, and the position at which the
+// run last folded a record (to detect when it has ended).
+type foldRun struct {
+	head     record.Record
+	key      string
+	count    int
+	lastSeen int
+}
+
+// Folder collapses records that share a Template into a single record whose
+// Repeat count reflects how many were folded. It keeps a bounded set of open
+// runs, oldest head first, so interleaved event types fold in parallel; a run is
+// held until it ends (no match within foldWindow) or Flush is called, trading a
+// little latency for clean counts. Runs are always emitted in head order, so
+// output stays time-ordered. Folding is skipped for disabled Folders and
+// passthrough lines.
 type Folder struct {
 	enabled bool
-	pending record.Record
-	has     bool
-	key     string
-	count   int
+	runs    []foldRun // open runs, oldest head first
+	pos     int       // monotonic count of parsed records seen
 }
 
 // NewFolder returns a Folder. When enabled is false, Add emits every record
@@ -62,35 +85,66 @@ func NewFolder(enabled bool) *Folder {
 	return &Folder{enabled: enabled}
 }
 
-// Add feeds the next record and returns the records ready to emit now (zero
-// when the record extends the current run, otherwise the flushed run followed
-// by nothing until its own run ends).
+// Add feeds the next record and returns the records ready to emit now: any runs
+// that just ended (plus, for a disabled or passthrough line, that line itself).
+// A record that extends an open run folds into it and emits nothing.
 func (f *Folder) Add(rec record.Record) []record.Record {
 	if !f.enabled || !rec.Parsed {
 		return append(f.Flush(), rec)
 	}
+	f.pos++
+	out := f.flushEnded()
+
 	key := Template(rec)
-	if f.has && key == f.key {
-		f.count++
-		return nil
+	for i := range f.runs {
+		if f.runs[i].key == key {
+			f.runs[i].count++
+			f.runs[i].lastSeen = f.pos
+			return out
+		}
 	}
-	out := f.Flush()
-	f.pending = rec
-	f.has = true
-	f.key = key
-	f.count = 1
+
+	if len(f.runs) >= maxOpenRuns {
+		out = append(out, f.flushPrefix(1)...)
+	}
+	f.runs = append(f.runs, foldRun{head: rec, key: key, count: 1, lastSeen: f.pos})
 	return out
 }
 
-// Flush emits the buffered run, if any. Call it once after the input ends.
+// Flush finalizes and clears every open run in head order. Call it after input
+// ends and on the flush timer, bounding how long a still-open run is held on a
+// live tail.
 func (f *Folder) Flush() []record.Record {
-	if !f.has {
+	return f.flushPrefix(len(f.runs))
+}
+
+// flushEnded finalizes every run that has folded nothing within foldWindow,
+// along with any older run ahead of it, so emitted heads stay in time order.
+func (f *Folder) flushEnded() []record.Record {
+	last := -1
+	for i := range f.runs {
+		if f.pos-f.runs[i].lastSeen > foldWindow {
+			last = i
+		}
+	}
+	if last < 0 {
 		return nil
 	}
-	rec := f.pending
-	rec.Repeat = f.count
-	f.has = false
-	f.count = 0
-	f.key = ""
-	return []record.Record{rec}
+	return f.flushPrefix(last + 1)
+}
+
+// flushPrefix finalizes and removes the first n open runs (the oldest heads),
+// returning them ready to render. Flushing a prefix keeps output in head order.
+func (f *Folder) flushPrefix(n int) []record.Record {
+	if n <= 0 {
+		return nil
+	}
+	out := make([]record.Record, n)
+	for i := range out {
+		rec := f.runs[i].head
+		rec.Repeat = f.runs[i].count
+		out[i] = rec
+	}
+	f.runs = f.runs[:copy(f.runs, f.runs[n:])]
+	return out
 }

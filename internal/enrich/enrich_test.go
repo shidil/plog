@@ -278,6 +278,62 @@ func TestFolderCollapsesConsecutiveRun(t *testing.T) {
 	}
 }
 
+func TestFolderCollapsesInterleavedRuns(t *testing.T) {
+	f := NewFolder(true)
+	a := func() record.Record {
+		return Severity(mkRec(record.LevelInfo, "no booking settings for location; returning no slots", record.KV{Key: "service", Val: "booking"}))
+	}
+	b := func() record.Record {
+		return Severity(mkRec(record.LevelInfo, "finished call", record.KV{Key: "service", Val: "booking"}))
+	}
+
+	var emitted []record.Record
+	for _, r := range []record.Record{a(), b(), a(), b(), a(), b()} {
+		emitted = append(emitted, f.Add(r)...)
+	}
+	emitted = append(emitted, f.Flush()...)
+
+	if len(emitted) != 2 {
+		t.Fatalf("emitted %d records, want 2 (one folded run per interleaved template): %+v", len(emitted), emitted)
+	}
+	if emitted[0].Message != "no booking settings for location; returning no slots" || emitted[0].Repeat != 3 {
+		t.Errorf("first run = %q ×%d, want %q ×3", emitted[0].Message, emitted[0].Repeat, "no booking settings for location; returning no slots")
+	}
+	if emitted[1].Message != "finished call" || emitted[1].Repeat != 3 {
+		t.Errorf("second run = %q ×%d, want %q ×3", emitted[1].Message, emitted[1].Repeat, "finished call")
+	}
+}
+
+func TestFolderFlushesRunEndedByWindow(t *testing.T) {
+	f := NewFolder(true)
+	rare := Severity(mkRec(record.LevelInfo, "rare event", record.KV{Key: "service", Val: "booking"}))
+	storm := func() record.Record {
+		return Severity(mkRec(record.LevelInfo, "finished call", record.KV{Key: "service", Val: "booking"}))
+	}
+
+	var emitted []record.Record
+	emitted = append(emitted, f.Add(rare)...)
+	for range foldWindow + 1 {
+		emitted = append(emitted, f.Add(storm())...)
+	}
+	// The rare run has not matched within foldWindow, so it flushed before Flush.
+	beforeFlush := len(emitted)
+	emitted = append(emitted, f.Flush()...)
+
+	if beforeFlush != 1 {
+		t.Fatalf("emitted %d records before Flush, want 1 (the window-ended rare run): %+v", beforeFlush, emitted[:beforeFlush])
+	}
+	if len(emitted) != 2 {
+		t.Fatalf("emitted %d records total, want 2: %+v", len(emitted), emitted)
+	}
+	if emitted[0].Message != "rare event" || emitted[0].Repeat != 1 {
+		t.Errorf("first run = %q ×%d, want %q ×1", emitted[0].Message, emitted[0].Repeat, "rare event")
+	}
+	if emitted[1].Message != "finished call" || emitted[1].Repeat != foldWindow+1 {
+		t.Errorf("second run = %q ×%d, want %q ×%d", emitted[1].Message, emitted[1].Repeat, "finished call", foldWindow+1)
+	}
+}
+
 func TestFolderDisabledEmitsEverything(t *testing.T) {
 	f := NewFolder(false)
 	r := Severity(mkRec(record.LevelInfo, "same", record.KV{Key: "component", Val: "x"}))
