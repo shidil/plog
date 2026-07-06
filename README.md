@@ -7,6 +7,8 @@ in, get a readable one out:
 docker logs -f storefront | plog
 ```
 
+![plog output](./docs/img/after.png)
+
 This is a spike. It implements the four highest-leverage ideas from
 [`IDEA.md`](./IDEA.md); the rest are phase-2.
 
@@ -44,6 +46,28 @@ This is a spike. It implements the four highest-leverage ideas from
   line) can hide one.
 
 Color is applied only when stdout is a terminal.
+
+## Before / After
+
+<table>
+<tr>
+<td align="center"><code>docker logs -f storefront</code></td>
+<td align="center"><code>docker logs -f storefront | plog</code></td>
+</tr>
+<tr>
+<td><img src="./docs/img/before.png" alt="Raw JSON logs"></td>
+<td><img src="./docs/img/after.png" alt="plog output"></td>
+</tr>
+</table>
+
+Same nine records, same information — but now: the panic's severity is
+re-ranked `INFO→ERR`, its stack collapses to two project frames (`►
+location_rpc.go:72`, `► logger.go:40`) with framework noise folded to `…
+5 framework frames (…)`, the duplicate panic on the next connection folds to
+`×2`, the validation failure that follows is linked back to the panic with
+`↳ likely related: …`, and the repeated `connection refused` metrics error
+folds to `×2` as well. The trailing non-JSON line still passes through
+untouched.
 
 ## Usage
 
