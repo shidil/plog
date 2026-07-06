@@ -3,9 +3,14 @@ package enrich
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/shidil/plog/internal/record"
 )
+
+// t0 is a fixed base time for Folder tests; those that do not exercise FlushIdle
+// pass it unchanged, since only relative wall-clock gaps affect folding.
+var t0 = time.Unix(1700000000, 0)
 
 // mkRec builds a parsed record with the declared level mirrored into Effective,
 // as the parse stage would produce before enrichment.
@@ -263,7 +268,7 @@ func TestFolderCollapsesConsecutiveRun(t *testing.T) {
 
 	var emitted []record.Record
 	for _, r := range []record.Record{r1, r2, r3} {
-		emitted = append(emitted, f.Add(r)...)
+		emitted = append(emitted, f.Add(r, t0)...)
 	}
 	emitted = append(emitted, f.Flush()...)
 
@@ -289,7 +294,7 @@ func TestFolderCollapsesInterleavedRuns(t *testing.T) {
 
 	var emitted []record.Record
 	for _, r := range []record.Record{a(), b(), a(), b(), a(), b()} {
-		emitted = append(emitted, f.Add(r)...)
+		emitted = append(emitted, f.Add(r, t0)...)
 	}
 	emitted = append(emitted, f.Flush()...)
 
@@ -312,9 +317,9 @@ func TestFolderFlushesRunEndedByWindow(t *testing.T) {
 	}
 
 	var emitted []record.Record
-	emitted = append(emitted, f.Add(rare)...)
+	emitted = append(emitted, f.Add(rare, t0)...)
 	for range foldWindow + 1 {
-		emitted = append(emitted, f.Add(storm())...)
+		emitted = append(emitted, f.Add(storm(), t0)...)
 	}
 	// The rare run has not matched within foldWindow, so it flushed before Flush.
 	beforeFlush := len(emitted)
@@ -334,13 +339,58 @@ func TestFolderFlushesRunEndedByWindow(t *testing.T) {
 	}
 }
 
+func TestFolderFlushIdleRevealsPausedRun(t *testing.T) {
+	f := NewFolder(true)
+	rec := func() record.Record {
+		return Severity(mkRec(record.LevelInfo, "finished call", record.KV{Key: "service", Val: "booking"}))
+	}
+
+	f.Add(rec(), t0)
+	if out := f.Add(rec(), t0.Add(10*time.Millisecond)); len(out) != 0 {
+		t.Fatalf("second record of a run emitted early: %+v", out)
+	}
+	// A tick before the run has been idle for idleFor reveals nothing.
+	if out := f.FlushIdle(t0.Add(idleFor - time.Millisecond)); len(out) != 0 {
+		t.Fatalf("FlushIdle before idleFor emitted %d records, want 0", len(out))
+	}
+	// Once idle for idleFor since its last record, the run surfaces as one count.
+	out := f.FlushIdle(t0.Add(10*time.Millisecond + idleFor))
+	if len(out) != 1 || out[0].Repeat != 2 {
+		t.Fatalf("FlushIdle after pause = %+v, want one record ×2", out)
+	}
+}
+
+func TestFolderFlushIdleHoldsStormUntilMaxHold(t *testing.T) {
+	f := NewFolder(true)
+	rec := func() record.Record {
+		return Severity(mkRec(record.LevelInfo, "finished call", record.KV{Key: "service", Val: "booking"}))
+	}
+
+	// A steady storm — one record every 100ms — is never idle for idleFor, so a
+	// tick after each record must not split the accumulating count.
+	now, count := t0, 0
+	for now.Sub(t0) < maxHold {
+		f.Add(rec(), now)
+		count++
+		if out := f.FlushIdle(now); len(out) != 0 {
+			t.Fatalf("FlushIdle split an active storm at +%v: %+v", now.Sub(t0), out)
+		}
+		now = now.Add(100 * time.Millisecond)
+	}
+	// Held for maxHold, the still-active run finally surfaces as one clean count.
+	out := f.FlushIdle(now)
+	if len(out) != 1 || out[0].Repeat != count {
+		t.Fatalf("FlushIdle at maxHold = %+v, want one record ×%d", out, count)
+	}
+}
+
 func TestFolderDisabledEmitsEverything(t *testing.T) {
 	f := NewFolder(false)
 	r := Severity(mkRec(record.LevelInfo, "same", record.KV{Key: "component", Val: "x"}))
 
 	var emitted []record.Record
 	for range 3 {
-		emitted = append(emitted, f.Add(r)...)
+		emitted = append(emitted, f.Add(r, t0)...)
 	}
 	emitted = append(emitted, f.Flush()...)
 

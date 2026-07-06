@@ -27,12 +27,15 @@ import (
 // to a few KB, so the default bufio.Scanner limit is raised generously.
 const maxLine = 4 << 20 // 4 MiB
 
-// flushInterval caps how long Folder may hold a still-open run before it is
-// emitted. Without it, a live tail (docker logs -f) narrowed by a filter to one
-// near-identical event folds into a single run that no distinct line ever ends,
-// so nothing prints until EOF — which a follow never reaches. The tick bounds
-// that latency; counts then split across ticks instead of accumulating to one.
-const flushInterval = time.Second
+// flushTick is how often the main loop asks Folder to reveal runs that have
+// paused or aged out (Folder.FlushIdle). It is the resolution of that check, not
+// a flush period: a live tail (docker logs -f) narrowed by a filter to one
+// near-identical event would otherwise fold into a run that no distinct line
+// ever ends, printing nothing until EOF — which a follow never reaches. A finer
+// tick tightens how promptly a paused run surfaces; the idle/max-hold policy in
+// Folder decides which runs actually flush, so a busy run no longer splits on
+// every tick.
+const flushTick = 250 * time.Millisecond
 
 func main() {
 	module := flag.String("module", "github.com/example", "import-path prefix treated as project code in stack traces")
@@ -88,7 +91,7 @@ type options struct {
 
 // run drives the pipeline: each line is parsed, enriched, filtered, folded, and
 // rendered. Lines are read on a separate goroutine so the main loop can also
-// wake on a timer and flush a folded run that is still open (see flushInterval);
+// wake on a timer and reveal a folded run that has paused or aged out (see flushTick);
 // all record processing stays on this one goroutine, so the pipeline holds no
 // shared state.
 func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, opts options) error {
@@ -113,7 +116,7 @@ func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, 
 		return bw.Flush()
 	}
 
-	process := func(line string) error {
+	process := func(line string, now time.Time) error {
 		rec := parse.LineAs(line, opts.format)
 		rec = enrich.Severity(rec)
 		rec = enrich.Stack(rec, opts.module)
@@ -122,14 +125,14 @@ func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, 
 		}
 		rec = cor.Mark(rec)
 		rec = cols.Mark(rec)
-		return emit(folder.Add(rec))
+		return emit(folder.Add(rec, now))
 	}
 
 	done := make(chan struct{})
 	defer close(done)
 	lines, errc := scanLines(in, done)
 
-	ticker := time.NewTicker(flushInterval)
+	ticker := time.NewTicker(flushTick)
 	defer ticker.Stop()
 
 	for {
@@ -142,13 +145,13 @@ func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, 
 				}
 				return <-errc
 			}
-			if err := process(line); err != nil {
+			if err := process(line, time.Now()); err != nil {
 				return err
 			}
-		case <-ticker.C:
-			// A run still open after a full tick has waited long enough; emit it
-			// rather than hold it for a distinct line that a follow may never see.
-			if err := emit(folder.Flush()); err != nil {
+		case now := <-ticker.C:
+			// Reveal runs that have paused or aged out; a busy run keeps folding
+			// into one count until max-hold rather than splitting every tick.
+			if err := emit(folder.FlushIdle(now)); err != nil {
 				return err
 			}
 		}

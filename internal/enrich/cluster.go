@@ -2,6 +2,7 @@ package enrich
 
 import (
 	"regexp"
+	"time"
 
 	"github.com/shidil/plog/internal/record"
 )
@@ -56,23 +57,36 @@ const foldWindow = 10
 // flat when many event types interleave; the oldest run is flushed to make room.
 const maxOpenRuns = 8
 
+// idleFor and maxHold are the wall-clock policy FlushIdle applies to bound head
+// latency without splitting counts on every timer tick. A run that has folded
+// nothing for idleFor has paused and is revealed promptly; a run still folding
+// records is held (accumulating one clean count) until maxHold, so a never-ending
+// storm still surfaces but splits at most every maxHold instead of every tick.
+const (
+	idleFor = 750 * time.Millisecond
+	maxHold = 3 * time.Second
+)
+
 // foldRun is one open run: a head record standing in for its repetitions, the
-// template that identifies them, the count so far, and the position at which the
-// run last folded a record (to detect when it has ended).
+// template that identifies them, the count so far, the position at which the run
+// last folded a record (to bound interleaving by foldWindow), and the wall-clock
+// times it opened and last folded a record (to drive FlushIdle).
 type foldRun struct {
 	head     record.Record
 	key      string
 	count    int
-	lastSeen int
+	lastPos  int
+	openedAt time.Time
+	lastAt   time.Time
 }
 
 // Folder collapses records that share a Template into a single record whose
 // Repeat count reflects how many were folded. It keeps a bounded set of open
 // runs, oldest head first, so interleaved event types fold in parallel; a run is
-// held until it ends (no match within foldWindow) or Flush is called, trading a
-// little latency for clean counts. Runs are always emitted in head order, so
-// output stays time-ordered. Folding is skipped for disabled Folders and
-// passthrough lines.
+// held until it ends (no match within foldWindow), pauses or ages out (FlushIdle),
+// or Flush is called, trading a little latency for clean counts. Runs are always
+// emitted in head order, so output stays time-ordered. Folding is skipped for
+// disabled Folders and passthrough lines.
 type Folder struct {
 	enabled bool
 	runs    []foldRun // open runs, oldest head first
@@ -85,10 +99,11 @@ func NewFolder(enabled bool) *Folder {
 	return &Folder{enabled: enabled}
 }
 
-// Add feeds the next record and returns the records ready to emit now: any runs
-// that just ended (plus, for a disabled or passthrough line, that line itself).
-// A record that extends an open run folds into it and emits nothing.
-func (f *Folder) Add(rec record.Record) []record.Record {
+// Add feeds the next record, observed at wall-clock now, and returns the records
+// ready to emit now: any runs that just ended (plus, for a disabled or passthrough
+// line, that line itself). A record that extends an open run folds into it and
+// emits nothing.
+func (f *Folder) Add(rec record.Record, now time.Time) []record.Record {
 	if !f.enabled || !rec.Parsed {
 		return append(f.Flush(), rec)
 	}
@@ -99,7 +114,8 @@ func (f *Folder) Add(rec record.Record) []record.Record {
 	for i := range f.runs {
 		if f.runs[i].key == key {
 			f.runs[i].count++
-			f.runs[i].lastSeen = f.pos
+			f.runs[i].lastPos = f.pos
+			f.runs[i].lastAt = now
 			return out
 		}
 	}
@@ -107,13 +123,31 @@ func (f *Folder) Add(rec record.Record) []record.Record {
 	if len(f.runs) >= maxOpenRuns {
 		out = append(out, f.flushPrefix(1)...)
 	}
-	f.runs = append(f.runs, foldRun{head: rec, key: key, count: 1, lastSeen: f.pos})
+	f.runs = append(f.runs, foldRun{head: rec, key: key, count: 1, lastPos: f.pos, openedAt: now, lastAt: now})
 	return out
 }
 
+// FlushIdle finalizes, in head order, every open run that has paused (folded
+// nothing for idleFor) or aged out (open for maxHold), along with any older run
+// ahead of it. The caller invokes it on a timer so a still-open run on a live
+// tail is revealed within idleFor of its last record, while a sustained storm
+// keeps folding into one count until maxHold rather than splitting every tick.
+func (f *Folder) FlushIdle(now time.Time) []record.Record {
+	last := -1
+	for i := range f.runs {
+		r := f.runs[i]
+		if now.Sub(r.lastAt) >= idleFor || now.Sub(r.openedAt) >= maxHold {
+			last = i
+		}
+	}
+	if last < 0 {
+		return nil
+	}
+	return f.flushPrefix(last + 1)
+}
+
 // Flush finalizes and clears every open run in head order. Call it after input
-// ends and on the flush timer, bounding how long a still-open run is held on a
-// live tail.
+// ends, or before emitting a passthrough line, so nothing is held indefinitely.
 func (f *Folder) Flush() []record.Record {
 	return f.flushPrefix(len(f.runs))
 }
@@ -123,7 +157,7 @@ func (f *Folder) Flush() []record.Record {
 func (f *Folder) flushEnded() []record.Record {
 	last := -1
 	for i := range f.runs {
-		if f.pos-f.runs[i].lastSeen > foldWindow {
+		if f.pos-f.runs[i].lastPos > foldWindow {
 			last = i
 		}
 	}
