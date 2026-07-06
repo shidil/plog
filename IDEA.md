@@ -143,6 +143,43 @@ regression.
 
 ---
 
+## Rendering
+
+### 18. Live-updating TTY renderer (in-place fold counts)
+The append-only stream renderer can't have both zero head latency *and* exact
+fold counts — to collapse a run it must wait to see if the run continues. Today
+that tension is managed by windowed folding plus an idle / max-hold flush policy
+(see CLAUDE.md's "Known trade-off"), which is pipe-safe and covers the common
+case but still lags a run's head by ~`idleFor` and splits a storm longer than
+`maxHold`. A **second `render.Renderer`** removes the tension entirely *when
+stdout is a terminal*: emit a fold line immediately as `×1` and **rewrite it in
+place** (`\r` / cursor-up) as the count climbs — instant reveal *and* an exact,
+accumulating count, the way `docker stats` feels live.
+
+This is **not** the deferred interactive keyboard TUI (#13): it takes no stdin,
+so it coexists with a live pipe (`docker logs -f | plog`). It is gated on stdout
+being a TTY (`os.ModeCharDevice`, the same signal that gates color); the non-TTY
+path (files, `grep`, `less`) keeps today's emit-once behavior byte-for-byte.
+
+Contract: `Folder` stays the single source of truth and emits *run-update* +
+*finalize* records; the TTY renderer rewrites on update, the plain renderer
+ignores updates and prints only finalized runs. This keeps the one-record-type,
+independent-stages design intact — the renderer is additive, not a pipeline
+change.
+
+**Build gate (all three must hold):** (1) folding has stopped changing; (2) the
+updatable-record renderer contract above is decided; (3) you can commit to the
+full terminal-control surface — cursor save/restore, line-wrap and resize
+(SIGWINCH), `TERM=dumb`, and a clean fallback the instant stdout isn't a TTY
+(half-built cursor control garbles piped output — it's all-or-nothing).
+**Trigger:** sustained interactive live-tail becomes a primary workflow, or the
+`plog <file>` paging/scrollback work (#13) gets scheduled — best built then, as
+the first consumer of a terminal-control layer the TUI reuses. **Anti-trigger:**
+while it's still a spike, or when output is predominantly non-TTY (the renderer
+never activates there).
+
+---
+
 ## Baseline features (from the original brief)
 
 1. **Filtering and search** — by level, time range, component; quick find.
