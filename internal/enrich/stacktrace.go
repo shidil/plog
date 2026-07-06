@@ -24,6 +24,7 @@ func Stack(rec record.Record, module string) record.Record {
 		return rec
 	}
 	if st := detectAndParse(rec.Message, module); st != nil {
+		st.Header = pickHeader(st, rec.Message, rec.Message)
 		rec.Stack = st
 		return rec
 	}
@@ -36,17 +37,36 @@ func Stack(rec record.Record, module string) record.Record {
 		if st == nil {
 			continue
 		}
-		// The grammar falls back to a synthetic header when the value carries no
-		// text of its own; for a field-borne trace the record's message is the
-		// real summary, so prefer it in that case.
-		if rec.Message != "" && !hasLeadingText(val) {
-			st.Header = rec.Message
-		}
+		st.Header = pickHeader(st, val, rec.Message)
 		rec.Stack = st
 		rec.Fields = append(rec.Fields[:i:i], rec.Fields[i+1:]...)
 		return rec
 	}
 	return rec
+}
+
+// pickHeader chooses a lifted trace's display header: the grammar's own header
+// when it extracted one, else the record's message when the trace came from a
+// separate field (so the message is a distinct summary), else the trace's first
+// non-empty line.
+func pickHeader(st *record.StackTrace, source, message string) string {
+	if st.Header != "" {
+		return st.Header
+	}
+	if message != "" && message != source {
+		return message
+	}
+	return firstLine(source)
+}
+
+// firstLine returns the first non-empty, trimmed line of s.
+func firstLine(s string) string {
+	for ln := range strings.SplitSeq(s, "\n") {
+		if trimmed := strings.TrimSpace(ln); trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 // looksLikeTrace reports whether s is worth attempting to parse as a stack

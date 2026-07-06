@@ -190,6 +190,9 @@ func location(f record.Frame) string {
 	if f.Line == 0 {
 		return file
 	}
+	if f.Col > 0 {
+		return fmt.Sprintf("%s:%d:%d", file, f.Line, f.Col)
+	}
 	return fmt.Sprintf("%s:%d", file, f.Line)
 }
 

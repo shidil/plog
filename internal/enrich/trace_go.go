@@ -13,6 +13,8 @@ import (
 // "file:line +0xNN" location.
 type goGrammar struct{}
 
+func (goGrammar) lang() string { return "go" }
+
 // goroutineHeader matches the "goroutine 23 [running]:" line that introduces a
 // Go stack trace, used to locate where the trace begins within a value.
 var goroutineHeader = regexp.MustCompile(`(?m)^goroutine \d+ \[[^\]]*\]:$`)
@@ -59,21 +61,9 @@ func (goGrammar) parse(s, module string) *record.StackTrace {
 	if len(frames) == 0 {
 		return nil
 	}
-	if header == "" {
-		header = strings.TrimSpace(lines[0])
-	}
+	// header stays "" for a bare dump with no preceding text; the caller decides
+	// the fallback (pickHeader) so the choice is uniform across grammars.
 	return &record.StackTrace{Header: header, Frames: frames}
-}
-
-// hasLeadingText reports whether a Go trace value carries human text (a
-// panic/error line) before its goroutine header, as opposed to beginning with
-// the trace itself.
-func hasLeadingText(s string) bool {
-	loc := goroutineHeader.FindStringIndex(s)
-	if loc == nil {
-		return false
-	}
-	return strings.TrimSpace(s[:loc[0]]) != ""
 }
 
 // parseLocation reads "file.go:line +0xNN" from an indented location line and

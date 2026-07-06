@@ -206,6 +206,7 @@ func FuzzStackField(f *testing.F) {
 		"",
 		"plain text",
 		sampleTrace,
+		nodeTrace,
 		"goroutine 1 [running]:\nmain.x()\n\t/a/b.go:1 +0x1",
 		"goroutine\n\n",
 		"at foo (index.js:1:1)",

@@ -68,9 +68,9 @@ type FrameKind int
 
 // Frame origins.
 const (
-	FrameStdlib     FrameKind = iota // Go standard library (net/http, runtime, ...)
-	FrameThirdParty                  // external module (otel, connectrpc, ...)
-	FrameProject                     // matches the configured module prefix
+	FrameStdlib     FrameKind = iota // language runtime/builtin (Go stdlib, node:internal, ...)
+	FrameThirdParty                  // external dependency (otel, connectrpc, node_modules, ...)
+	FrameProject                     // the user's own code
 )
 
 // Frame is a single parsed stack-trace frame.
@@ -78,13 +78,15 @@ type Frame struct {
 	Func string // fully qualified function, pointers stripped
 	File string // source path as emitted by the runtime
 	Line int    // source line, 0 if not parsed
+	Col  int    // source column, 0 if not parsed (e.g. Go traces omit it)
 	Kind FrameKind
 }
 
-// StackTrace is a Go panic/goroutine trace extracted from a log message.
+// StackTrace is a parsed stack trace from a supported language.
 type StackTrace struct {
 	Header string  // the human text preceding the trace (e.g. the panic line)
 	Frames []Frame // frames in emission order (innermost first)
+	Lang   string  // source language, e.g. "go" or "node"
 }
 
 // Related links a record back to a recent, more severe event it appears to stem
@@ -105,7 +107,7 @@ type Record struct {
 	Effective Level       // severity after enrichment; equals Level when unchanged
 	Message   string      // the primary message (msg field)
 	Fields    []KV        // remaining structured fields, in source order
-	Stack     *StackTrace // non-nil when Message embedded a Go stack trace
+	Stack     *StackTrace // non-nil when the record embedded a stack trace, in the message or a field
 	Raw       string      // the original line, always retained
 	Parsed    bool        // false => passthrough line
 	Repeat    int         // occurrences collapsed into this record; >1 => folded run
