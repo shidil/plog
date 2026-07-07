@@ -116,6 +116,69 @@ func TestRenderStackFoldsFrameworkSurfacesProject(t *testing.T) {
 	}
 }
 
+// fakeLinker links a fixed file, standing in for internal/link so the render
+// test does not touch the filesystem.
+type fakeLinker struct{ file, uri string }
+
+func (l fakeLinker) FrameURI(f record.Frame) string {
+	if f.File == l.file {
+		return l.uri
+	}
+	return ""
+}
+
+// TestRenderProjectFrameHyperlinked checks that a configured linker wraps a
+// resolvable project frame's location in an OSC 8 hyperlink, and leaves an
+// unresolvable framework frame (under expand-stack) as plain text.
+func TestRenderProjectFrameHyperlinked(t *testing.T) {
+	rec := record.Record{
+		Level:     record.LevelError,
+		Effective: record.LevelError,
+		Message:   "panic",
+		Parsed:    true,
+		Stack: &record.StackTrace{
+			Header: "boom",
+			Frames: []record.Frame{
+				{Func: "net/http.(*conn).serve", File: "net/http/server.go", Line: 1907, Kind: record.FrameStdlib},
+				{Func: "storefront/rpc.Resolve", File: "internal/rpc/location_rpc.go", Line: 72, Kind: record.FrameProject},
+			},
+		},
+	}
+	linker := fakeLinker{file: "internal/rpc/location_rpc.go", uri: "vscode://file/src/internal/rpc/location_rpc.go:72"}
+	got := renderOne(t, rec, PlainConfig{ExpandStack: true, Link: linker})
+
+	wantLink := "\x1b]8;;vscode://file/src/internal/rpc/location_rpc.go:72\x1b\\"
+	if !strings.Contains(got, wantLink) {
+		t.Errorf("project frame not wrapped in an OSC 8 hyperlink:\n%q", got)
+	}
+	// Exactly one hyperlink: the resolvable project frame. The framework frame
+	// does not resolve, so it adds no escape. Each link is one open + one close
+	// marker, so a single link means exactly two "\x1b]8;;" markers.
+	if n := strings.Count(got, "\x1b]8;;"); n != 2 {
+		t.Errorf("want exactly one hyperlink (2 OSC 8 markers), got %d:\n%q", n, got)
+	}
+}
+
+// TestRenderNoLinkerNoEscape checks that without a linker the stack renders with
+// no OSC 8 escapes at all.
+func TestRenderNoLinkerNoEscape(t *testing.T) {
+	rec := record.Record{
+		Level:     record.LevelError,
+		Effective: record.LevelError,
+		Parsed:    true,
+		Stack: &record.StackTrace{
+			Header: "boom",
+			Frames: []record.Frame{
+				{Func: "storefront/rpc.Resolve", File: "internal/rpc/location_rpc.go", Line: 72, Kind: record.FrameProject},
+			},
+		},
+	}
+	got := renderOne(t, rec, PlainConfig{})
+	if strings.Contains(got, "\x1b]8;;") {
+		t.Errorf("no linker configured, but output carries an OSC 8 escape:\n%q", got)
+	}
+}
+
 func TestRenderExpandStackShowsAllFrames(t *testing.T) {
 	rec := record.Record{
 		Level:     record.LevelError,

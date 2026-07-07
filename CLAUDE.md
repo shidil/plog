@@ -18,7 +18,7 @@ go test -bench=BenchmarkPipeline -benchmem ./cmd/plog   # whole-pipeline through
 gofmt -l . && go vet ./...                 # format check + vet
 ```
 
-Run flags: `--module` (import-path prefix treated as project code, default `github.com/example`), `--format` (`auto` (sniff, default) / `json` / `logfmt` / `glog` (alias `klog`) / `python` (alias `pylog`) / `logrus` / `text` (force passthrough)), `--no-fold`, `--no-columns`, `--no-correlate`, `--min-level`, `--grep`, `--field` (repeatable `key=val`), `--expand-stack`, `--no-color`, `--version` (print build info — ldflags-stamped, `runtime/debug` fallback — and exit).
+Run flags: `--module` (import-path prefix treated as project code, default `github.com/example`), `--format` (`auto` (sniff, default) / `json` / `logfmt` / `glog` (alias `klog`) / `python` (alias `pylog`) / `logrus` / `text` (force passthrough)), `--no-fold`, `--no-columns`, `--no-correlate`, `--min-level`, `--grep`, `--field` (repeatable `key=val`), `--expand-stack`, `--no-color`, `--link` (make resolvable stack frames clickable via OSC 8 hyperlinks — an editor preset `vscode`/`cursor`/`zed`/`idea`/`file` or a `{path}`/`{line}`/`{col}` URI template; TTY-only), `--src` (local source root `--link` resolves frame paths against, default CWD), `--version` (print build info — ldflags-stamped, `runtime/debug` fallback — and exit).
 
 Bundled `testdata/` samples, each exercising a different path:
 
@@ -84,8 +84,9 @@ Key design constraints a change must respect:
 | `internal/enrich/columns.go` | `Columns` — sliding-window demote-never-drop field analysis |
 | `internal/enrich/correlate.go` | `Correlator` — backward-only grouping (`Corr`) + causal linking (`Related`) |
 | `internal/filter/filter.go` | `Filter`, `New` (flag parse/validate), `Match` predicate |
+| `internal/link/link.go` | `Linker` (`--link`): resolves a frame's runtime path to a local file by longest-suffix match under `--src`, formats an editor/terminal URI (preset or `{path}` template). Satisfies `render.FrameLinker`. |
 | `internal/render/render.go` | `Renderer` interface (`Render(record.Record) error`) — the extension seam |
-| `internal/render/plain.go` | `Plain` renderer: badge/re-rank, salient-vs-demoted fields, fold counts, corr tags, related notes, stack folding, color gate |
+| `internal/render/plain.go` | `Plain` renderer: badge/re-rank, salient-vs-demoted fields, fold counts, corr tags, related notes, stack folding, color gate, OSC 8 frame hyperlinks (via injected `FrameLinker`) |
 
 Each package has adjacent `*_test.go` files; the parser also has `FuzzParseLine`.
 
@@ -106,13 +107,14 @@ Each package has adjacent `*_test.go` files; the parser also has `FuzzParseLine`
 - **Auto-sniff order is JSON → glog → pylog → logrus → logfmt** (in `LineAs`). logfmt is last because its sniff is the loosest (any leading `key=`); the others have tight, mutually-exclusive shape sniffs, so order among them is not load-bearing but cheapest-first is kept. Forcing `--format logfmt` parses *any* whitespace text into bare-key pairs (logfmt's valueless-key rule), so it is not a useful negative in tests — force `--format json` when asserting a non-JSON line passes through.
 - **logrus is only the colored TTY shape** (`LEVEL[stamp] msg  k=v` with ANSI). logrus's non-colored output is already logfmt. `sniffLogrus`/`parseLogrus` `stripANSI` first; the bracket must open on a digit (elapsed counter or timestamp), and a bare-digit elapsed is kept as an `elapsed` field, not the time. `glog`/`klog` carry no year, so their time is parsed with the `"0102 15:04:05"` layout (zero year, correct clock — the renderer shows only `HH:MM:SS`). Python `CRITICAL` maps to `LevelError` via `record.ParseLevel`.
 - **`FrameKind` zero value is `FrameStdlib`, not "unknown"** — `FrameProject`/`FrameThirdParty` are only meaningful after `enrich.Stack` runs. `Record.Stack` and `Record.Related` are pointers — nil-check them.
-- **The renderer is presentational only** — it never computes `Repeat`/`Corr`/`Related`/`Demoted`/`Effective`; upstream stages set those. Color is set from `isTerminal`, not detected in the renderer.
+- **The renderer is presentational only** — it never computes `Repeat`/`Corr`/`Related`/`Demoted`/`Effective`; upstream stages set those. Color is set from `isTerminal`, not detected in the renderer. Frame hyperlinks are the same: the renderer holds a `FrameLinker` (nil = off) and only *wraps* a location in an OSC 8 escape when the injected linker returns a URI — the filesystem lookup and URI formatting live in `internal/link`, not the renderer.
+- **Clickable frames are OSC 8 hyperlinks, TTY-gated and opt-in** — plog is stream-only (no keyboard channel), so it cannot launch `$EDITOR` itself; `--link` instead emits OSC 8 escapes the *terminal* makes clickable. `main.frameLinker` validates the scheme even when piped (bad `--link` fails fast) but returns a nil linker off a TTY (OSC 8 would corrupt redirected output; a note goes to stderr). Resolution is a **longest-suffix existence match** under `--src` — it needs no `--module` and is language-agnostic — so an unresolvable path (remote/container tail, module-cache dep, minified bundle) yields **no link** rather than a dead one. `--module` still governs only project/3p/stdlib *classification*.
 
 ## Conventions
 
 - Pure Go stdlib except `lipgloss` (styling). Keep the core dependency-light; color is gated on TTY detection (`os.ModeCharDevice`) so piped output stays clean text.
 - The `go-styleguide` and `go-test-author` skills are the source of truth for Go style and test scaffolding in this repo.
-- **Design docs (`docs/design/`):** multi-format parsing (logfmt, plus glog/klog, Python `logging`, logrus colored text) and Go+Node stack traces are **implemented**; continuation-line gluing (reassembling traces split across *physical* lines) and further stack languages (Python/Rust/Java) are **proposed, not built**. Don't assume a proposed doc reflects shipped code.
+- **Design docs (`docs/design/`):** multi-format parsing (logfmt, plus glog/klog, Python `logging`, logrus colored text), Go+Node stack traces, and clickable frames (`clickable-frames.md` — OSC 8 hyperlinks, `--link`/`--src`) are **implemented**; continuation-line gluing (reassembling traces split across *physical* lines — general design in `continuation-line-gluing.md`, with the Node/JS `console.log`/`util.inspect` slice scoped in `nodejs-console-glue-collapse.md`) and further stack languages (Python/Rust/Java) are **proposed, not built**. Don't assume a proposed doc reflects shipped code.
 
 ### Keeping the docs in sync
 

@@ -18,6 +18,7 @@ type Plain struct {
 	w           io.Writer
 	color       bool
 	expandStack bool
+	link        FrameLinker
 
 	dim     lipgloss.Style
 	key     lipgloss.Style
@@ -26,10 +27,19 @@ type Plain struct {
 	levels  map[record.Level]lipgloss.Style
 }
 
+// FrameLinker turns a stack frame into a terminal hyperlink (OSC 8) target URI,
+// or "" when the frame has no resolvable local file. The renderer takes it as a
+// dependency (see internal/link) so it stays presentational — it never touches
+// the filesystem or knows about editors.
+type FrameLinker interface {
+	FrameURI(f record.Frame) string
+}
+
 // PlainConfig configures a Plain renderer.
 type PlainConfig struct {
-	Color       bool // apply ANSI styling
-	ExpandStack bool // show every frame instead of folding framework frames
+	Color       bool        // apply ANSI styling
+	ExpandStack bool        // show every frame instead of folding framework frames
+	Link        FrameLinker // when non-nil, make resolvable project frames clickable
 }
 
 // NewPlain returns a Plain renderer writing to w.
@@ -38,6 +48,7 @@ func NewPlain(w io.Writer, cfg PlainConfig) *Plain {
 		w:           w,
 		color:       cfg.Color,
 		expandStack: cfg.ExpandStack,
+		link:        cfg.Link,
 		dim:         lipgloss.NewStyle().Faint(true),
 		key:         lipgloss.NewStyle().Faint(true),
 		project:     lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("14")),
@@ -155,7 +166,7 @@ func (p *Plain) writeStack(b *strings.Builder, st *record.StackTrace) {
 			if f.Kind == record.FrameProject {
 				marker = p.paint(p.project, "►")
 			}
-			fmt.Fprintf(b, "    %s %s  %s\n", marker, p.paint(p.project, location(f)), p.paint(p.dim, f.Func))
+			fmt.Fprintf(b, "    %s %s  %s\n", marker, p.linkedLocation(f), p.paint(p.dim, f.Func))
 			continue
 		}
 		framework = append(framework, f)
@@ -179,6 +190,27 @@ func foldSummary(frames []record.Frame) string {
 		pkgs = append(pkgs[:3], "…")
 	}
 	return fmt.Sprintf("… %d framework frames (%s)", len(frames), strings.Join(pkgs, ", "))
+}
+
+// linkedLocation renders a frame's location, wrapping it in an OSC 8 terminal
+// hyperlink when a linker is configured and resolves the frame to a local file.
+// The style is applied inside the link text so color and clickability compose.
+func (p *Plain) linkedLocation(f record.Frame) string {
+	loc := p.paint(p.project, location(f))
+	if p.link == nil {
+		return loc
+	}
+	if uri := p.link.FrameURI(f); uri != "" {
+		return hyperlink(uri, loc)
+	}
+	return loc
+}
+
+// hyperlink wraps text in an OSC 8 terminal hyperlink pointing at uri. Terminals
+// that support OSC 8 render the text as clickable; others ignore the escape and
+// show the text unchanged. The caller gates emission on stdout being a terminal.
+func hyperlink(uri, text string) string {
+	return "\x1b]8;;" + uri + "\x1b\\" + text + "\x1b]8;;\x1b\\"
 }
 
 // location formats a frame as file:line using only the file's base name.

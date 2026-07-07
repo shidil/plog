@@ -93,8 +93,23 @@ plog [flags]            # reads stdin, writes stdout
                         substring, e.g. --field rpc.method=Resolve (repeatable)
 --expand-stack          show every stack frame instead of folding
 --no-color              disable ANSI color even on a terminal
+--link string           make resolvable stack frames clickable via OSC 8
+                        hyperlinks: an editor preset
+                        (vscode|cursor|zed|idea|file) or a URI template with
+                        {path}/{line}/{col} (TTY only)
+--src string            local source root that --link resolves frame paths
+                        against (default: current directory)
 --version               print version information and exit
 ```
+
+**Clickable frames** (`--link`): when tailing a service whose source is checked
+out locally, `plog --link vscode --src ~/storefront` wraps each surfaced project
+frame in an [OSC 8 hyperlink](https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda)
+your terminal opens on click. plog is a pipe, so it can't launch `$EDITOR`
+itself — the terminal does. Frame paths are resolved by finding the longest
+suffix that exists under `--src`, so a path from a remote/container tail (or a
+minified bundle) that has no local file simply gets no link rather than a dead
+one. TTY-only; ignored when output is piped or redirected.
 
 Install:
 

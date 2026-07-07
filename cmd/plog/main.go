@@ -19,6 +19,7 @@ import (
 
 	"github.com/shidil/plog/internal/enrich"
 	"github.com/shidil/plog/internal/filter"
+	"github.com/shidil/plog/internal/link"
 	"github.com/shidil/plog/internal/parse"
 	"github.com/shidil/plog/internal/record"
 	"github.com/shidil/plog/internal/render"
@@ -60,6 +61,8 @@ func main() {
 	minLevel := flag.String("min-level", "", "drop parsed records below this effective severity (debug|info|warn|error)")
 	grep := flag.String("grep", "", "show only lines matching this regular expression (message/fields, or raw for passthrough)")
 	format := flag.String("format", "auto", "input format: auto (sniff), json, logfmt, glog, python, logrus, or text (passthrough)")
+	linkScheme := flag.String("link", "", "make resolvable stack frames clickable via OSC 8 hyperlinks: an editor preset (vscode|cursor|zed|idea|file) or a URI template with {path}/{line}/{col} (TTY only)")
+	srcRoot := flag.String("src", "", "local source root that --link resolves frame paths against (default: current directory)")
 	showVersion := flag.Bool("version", false, "print version information and exit")
 	var fields fieldFlags
 	flag.Var(&fields, "field", "show only records whose named field contains a substring, e.g. -field rpc.method=Resolve (repeatable)")
@@ -82,9 +85,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	linker, err := frameLinker(*linkScheme, *srcRoot, isTerminal(os.Stdout))
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "plog:", err)
+		os.Exit(1)
+	}
+
 	cfg := render.PlainConfig{
 		Color:       !*noColor && isTerminal(os.Stdout),
 		ExpandStack: *expandStack,
+		Link:        linker,
 	}
 	opts := options{
 		format:    inFormat,
@@ -137,6 +147,26 @@ func versionString() string {
 		out += fmt.Sprintf(" (%s)", c)
 	}
 	return out
+}
+
+// frameLinker builds the stack-frame hyperlinker from the --link/--src flags, or
+// nil when linking is off. An empty scheme disables it. The scheme is validated
+// even when stdout is not a terminal so a bad --link fails fast, but links are
+// only emitted on a TTY — OSC 8 escapes would corrupt piped or redirected output
+// — so a non-terminal stdout yields a nil linker with a note on stderr.
+func frameLinker(scheme, src string, isTTY bool) (render.FrameLinker, error) {
+	if scheme == "" {
+		return nil, nil
+	}
+	lk, err := link.New(scheme, src)
+	if err != nil {
+		return nil, err
+	}
+	if !isTTY {
+		fmt.Fprintln(os.Stderr, "plog: --link ignored (stdout is not a terminal)")
+		return nil, nil
+	}
+	return lk, nil
 }
 
 // options holds the parse/enrich toggles for a run, resolved from flags.
