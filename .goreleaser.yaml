@@ -1,0 +1,64 @@
+# goreleaser configuration for plog. Cut a release by pushing a semver tag
+# (e.g. `git tag v0.1.0 && git push origin v0.1.0`); the Release workflow runs
+# `goreleaser release --clean`. Try it locally without publishing via
+# `goreleaser release --snapshot --clean`.
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: plog
+    main: ./cmd/plog
+    binary: plog
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+      - -X main.commit={{ .Commit }}
+      - -X main.date={{ .Date }}
+
+archives:
+  - formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+release:
+  draft: false
+
+# Homebrew tap (optional, disabled until a tap repo exists). To enable:
+#   1. Create a github.com/shidil/homebrew-tap repository.
+#   2. Add a HOMEBREW_TAP_GITHUB_TOKEN secret with write access to it.
+#   3. Uncomment the block below and wire the token into the Release workflow.
+# brews:
+#   - repository:
+#       owner: shidil
+#       name: homebrew-tap
+#       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+#     homepage: https://github.com/shidil/plog
+#     description: Streaming pretty-printer for structured logs
+#     install: |
+#       bin.install "plog"

@@ -1,10 +1,15 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/shidil/plog/internal/filter"
+	"github.com/shidil/plog/internal/parse"
+	"github.com/shidil/plog/internal/render"
 )
 
 // TestScanLines_streamsThenClosesOnEOF checks the happy path: every line is
@@ -65,6 +70,54 @@ func TestScanLines_stopsOnDone(t *testing.T) {
 	case <-time.After(2 * time.Second):
 		t.Fatal("lines not closed after goroutine returned")
 	}
+}
+
+// BenchmarkPipeline drives the full stdin-to-stdout pipeline over a large
+// in-memory stream, validating IDEA.md's "scales to high-volume docker logs -f"
+// claim and guarding against throughput regressions. Output is discarded so the
+// measurement reflects parse/enrich/render work, not terminal I/O. Report
+// throughput with `go test -bench=BenchmarkPipeline -benchmem ./cmd/plog`.
+func BenchmarkPipeline(b *testing.B) {
+	stream := buildBenchStream(10000)
+	flt, err := filter.New("", "", nil)
+	if err != nil {
+		b.Fatalf("filter.New: %v", err)
+	}
+	cfg := render.PlainConfig{Color: false}
+	opts := options{
+		format:    parse.FormatAuto,
+		module:    "github.com/example",
+		fold:      true,
+		columns:   true,
+		correlate: true,
+	}
+	b.ReportAllocs()
+	b.SetBytes(int64(len(stream)))
+	for b.Loop() {
+		if err := run(strings.NewReader(stream), io.Discard, cfg, flt, opts); err != nil {
+			b.Fatalf("run: %v", err)
+		}
+	}
+}
+
+// buildBenchStream returns n lines of representative structured-log traffic: a
+// repeated OTel failure (exercises severity escalation + folding), distinct RPC
+// result logs (columns + correlation), and varying app logs. It is deterministic
+// so runs are comparable.
+func buildBenchStream(n int) string {
+	methods := []string{"ResolveLocationSlug", "ListStores", "GetMenu", "PlaceOrder"}
+	var b strings.Builder
+	for i := range n {
+		switch i % 5 {
+		case 0, 1:
+			fmt.Fprintf(&b, `{"time":"2026-07-07T04:31:%02dZ","level":"info","msg":"failed to upload metrics to collector: dial tcp 10.0.0.%d:4317: connection refused"}`+"\n", i%60, i%256)
+		case 2, 3:
+			fmt.Fprintf(&b, `{"time":"2026-07-07T04:31:%02dZ","level":"info","msg":"finished call","rpc.service":"storefront.LocationService","rpc.method":%q,"rpc.duration":"%dms","rpc.status":"ok","client":"192.168.1.%d"}`+"\n", i%60, methods[i%len(methods)], i%400, i%256)
+		default:
+			fmt.Fprintf(&b, `{"time":"2026-07-07T04:31:%02dZ","level":"debug","msg":"cache lookup","key":"store:%d","hit":%t}`+"\n", i%60, i, i%2 == 0)
+		}
+	}
+	return b.String()
 }
 
 // blockingReader yields its wrapped data, then blocks forever instead of

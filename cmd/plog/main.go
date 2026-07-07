@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strings"
 	"time"
 
@@ -21,6 +22,18 @@ import (
 	"github.com/shidil/plog/internal/parse"
 	"github.com/shidil/plog/internal/record"
 	"github.com/shidil/plog/internal/render"
+)
+
+// Build metadata, stamped at release time via -ldflags (see .goreleaser.yaml):
+//
+//	-X main.version=v0.1.0 -X main.commit=<sha> -X main.date=<rfc3339>
+//
+// They stay empty for a plain `go install`, where versionString falls back to
+// the module version and VCS stamp the Go toolchain embeds in the binary.
+var (
+	version = ""
+	commit  = ""
+	date    = ""
 )
 
 // maxLine bounds a single log line; the embedded panic traces in real logs run
@@ -47,9 +60,15 @@ func main() {
 	minLevel := flag.String("min-level", "", "drop parsed records below this effective severity (debug|info|warn|error)")
 	grep := flag.String("grep", "", "show only lines matching this regular expression (message/fields, or raw for passthrough)")
 	format := flag.String("format", "auto", "input format: auto (sniff), json, logfmt, or text (passthrough)")
+	showVersion := flag.Bool("version", false, "print version information and exit")
 	var fields fieldFlags
 	flag.Var(&fields, "field", "show only records whose named field contains a substring, e.g. -field rpc.method=Resolve (repeatable)")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(versionString())
+		return
+	}
 
 	inFormat, ok := parse.FormatFromString(*format)
 	if !ok {
@@ -80,6 +99,46 @@ func main() {
 	}
 }
 
+// versionString reports the build version for the -version flag. It prefers the
+// values a release build stamps in via -ldflags and falls back to the module
+// version and VCS revision the Go toolchain embeds, so a plain
+// `go install github.com/shidil/plog/cmd/plog@latest` still reports a real
+// version rather than "dev".
+func versionString() string {
+	v, c, d := version, commit, date
+	if info, ok := debug.ReadBuildInfo(); ok {
+		if v == "" {
+			v = info.Main.Version
+		}
+		for _, s := range info.Settings {
+			switch s.Key {
+			case "vcs.revision":
+				if c == "" {
+					c = s.Value
+				}
+			case "vcs.time":
+				if d == "" {
+					d = s.Value
+				}
+			}
+		}
+	}
+	if v == "" {
+		v = "dev"
+	}
+	out := "plog " + v
+	if len(c) > 12 {
+		c = c[:12]
+	}
+	switch {
+	case c != "" && d != "":
+		out += fmt.Sprintf(" (%s, %s)", c, d)
+	case c != "":
+		out += fmt.Sprintf(" (%s)", c)
+	}
+	return out
+}
+
 // options holds the parse/enrich toggles for a run, resolved from flags.
 type options struct {
 	format    parse.Format // how each line is decoded (auto-sniff by default)
@@ -94,7 +153,7 @@ type options struct {
 // wake on a timer and reveal a folded run that has paused or aged out (see flushTick);
 // all record processing stays on this one goroutine, so the pipeline holds no
 // shared state.
-func run(in *os.File, out *os.File, cfg render.PlainConfig, flt *filter.Filter, opts options) error {
+func run(in io.Reader, out io.Writer, cfg render.PlainConfig, flt *filter.Filter, opts options) error {
 	bw := bufio.NewWriter(out)
 	defer bw.Flush()
 

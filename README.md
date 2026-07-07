@@ -92,6 +92,13 @@ plog [flags]            # reads stdin, writes stdout
                         substring, e.g. --field rpc.method=Resolve (repeatable)
 --expand-stack          show every stack frame instead of folding
 --no-color              disable ANSI color even on a terminal
+--version               print version information and exit
+```
+
+Install:
+
+```sh
+go install github.com/shidil/plog/cmd/plog@latest
 ```
 
 Try it against the bundled sample:
@@ -142,6 +149,7 @@ See the "Known trade-off" note in `CLAUDE.md` for the full policy
 ```sh
 go test ./...                                              # unit tests
 go test -run=^$ -fuzz=FuzzParseLine -fuzztime=30s ./internal/parse
+go test -bench=BenchmarkPipeline -benchmem ./cmd/plog      # pipeline throughput
 ```
 
 New to the code? [`CLAUDE.md`](./CLAUDE.md) is the orientation for the

@@ -14,10 +14,11 @@ go build -o plog ./cmd/plog                # build the binary
 go test ./...                              # all tests
 go test ./internal/enrich -run TestStack   # a single test
 go test -run=^$ -fuzz=FuzzParseLine -fuzztime=30s ./internal/parse   # fuzz the parser
+go test -bench=BenchmarkPipeline -benchmem ./cmd/plog   # whole-pipeline throughput/allocs
 gofmt -l . && go vet ./...                 # format check + vet
 ```
 
-Run flags: `--module` (import-path prefix treated as project code, default `github.com/example`), `--format` (`auto` (sniff, default) / `json` / `logfmt` / `text` (force passthrough)), `--no-fold`, `--no-columns`, `--no-correlate`, `--min-level`, `--grep`, `--field` (repeatable `key=val`), `--expand-stack`, `--no-color`.
+Run flags: `--module` (import-path prefix treated as project code, default `github.com/example`), `--format` (`auto` (sniff, default) / `json` / `logfmt` / `text` (force passthrough)), `--no-fold`, `--no-columns`, `--no-correlate`, `--min-level`, `--grep`, `--field` (repeatable `key=val`), `--expand-stack`, `--no-color`, `--version` (print build info — ldflags-stamped, `runtime/debug` fallback — and exit).
 
 Bundled `testdata/` samples, each exercising a different path:
 
@@ -63,7 +64,7 @@ Key design constraints a change must respect:
 
 | Path | Role |
 |---|---|
-| `cmd/plog/main.go` | Flag parsing (`main`), pipeline driver (`run`), reader goroutine (`scanLines`), `fieldFlags` flag.Value, TTY detection (`isTerminal`), the `process`/`emit` closures |
+| `cmd/plog/main.go` | Flag parsing (`main`), pipeline driver (`run`, taking `io.Reader`/`io.Writer` so it is benchmarkable), reader goroutine (`scanLines`), `fieldFlags` flag.Value, TTY detection (`isTerminal`), build-info `versionString` (`--version`), the `process`/`emit` closures |
 | `internal/record/record.go` | The canonical `Record` struct + value types (`Level`, `KV`, `Frame`, `StackTrace`, `FrameKind`, `Related`) and `ParseLevel`/`Level.String`. Behavior-free data carrier. |
 | `internal/parse/parse.go` | Public `LineAs(line, format)` (+ `Line` auto-sniff wrapper), `Format`/`FormatFromString`, format dispatch, and the format-agnostic canonicalizer (time/level/msg alias extraction) |
 | `internal/parse/json.go` | JSON token-walk decoder (`parseJSON`), value render, `sniffJSON` |
