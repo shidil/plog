@@ -2,6 +2,15 @@
 
 Status: implemented · Scope: parse layer only · Owner: spike
 
+> **Update (Tier-2 graduation):** three more decoders now sit behind the same
+> seam — `glog`/`klog` (`glog.go`), Python `logging` (`pylog.go`), and logrus
+> colored text (`logrus.go`), each a `sniff*`+`parse*` pair emitting `pair`s for
+> `canon`. That is six formats through the sequential `switch`, past the "~3"
+> threshold below, but the switch stays flat and readable, so the `Format`
+> interface + ordered slice is still deferred — revisit it when a 7th format
+> lands or formats become user-pluggable. logrus is the colored TTY shape only
+> (its non-colored output is already logfmt); `parseLogrus` strips ANSI first.
+
 ## Problem
 
 `parse.Line` recognizes one wire format: a JSON object. logfmt

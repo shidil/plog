@@ -1,0 +1,6 @@
+I0605 14:29:00.100200   12345 server.go:88] starting HTTP server on :4000
+I0605 14:29:01.204509   12345 location_rpc.go:72] resolving location slug slug=downtown
+W0605 14:29:01.998311   12345 metrics.go:41] failed to upload metrics to collector: dial tcp 10.0.0.4:4317: connection refused
+I0605 14:29:02.115003   12345 location_rpc.go:72] resolving location slug slug=harbor
+E0605 14:29:02.330871   12345 location_rpc.go:72] runtime error: invalid memory address or nil pointer dereference
+W0605 14:29:03.001200   12345 metrics.go:41] failed to upload metrics to collector: dial tcp 10.0.0.4:4317: connection refused

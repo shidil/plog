@@ -18,7 +18,7 @@ go test -bench=BenchmarkPipeline -benchmem ./cmd/plog   # whole-pipeline through
 gofmt -l . && go vet ./...                 # format check + vet
 ```
 
-Run flags: `--module` (import-path prefix treated as project code, default `github.com/example`), `--format` (`auto` (sniff, default) / `json` / `logfmt` / `text` (force passthrough)), `--no-fold`, `--no-columns`, `--no-correlate`, `--min-level`, `--grep`, `--field` (repeatable `key=val`), `--expand-stack`, `--no-color`, `--version` (print build info — ldflags-stamped, `runtime/debug` fallback — and exit).
+Run flags: `--module` (import-path prefix treated as project code, default `github.com/example`), `--format` (`auto` (sniff, default) / `json` / `logfmt` / `glog` (alias `klog`) / `python` (alias `pylog`) / `logrus` / `text` (force passthrough)), `--no-fold`, `--no-columns`, `--no-correlate`, `--min-level`, `--grep`, `--field` (repeatable `key=val`), `--expand-stack`, `--no-color`, `--version` (print build info — ldflags-stamped, `runtime/debug` fallback — and exit).
 
 Bundled `testdata/` samples, each exercising a different path:
 
@@ -29,6 +29,9 @@ Bundled `testdata/` samples, each exercising a different path:
 | `go-stack-field.log` | A Go panic trace in a `stack` field — `enrich.Stack` (Go grammar), project/3p/stdlib classification, severity escalation |
 | `node-stack.log` | A Node.js `TypeError` stack in a `stack` field — Node grammar + `node_modules`/`node:internal` classification |
 | `logfmt.log` | logfmt (`key=value`) lines — the non-JSON decoder path |
+| `glog.log` | glog/klog lines (`I0605 14:29:01.204509 12345 file.go:72] msg`) — `parseGlog`, yearless time, `thread`/`caller` fields |
+| `pylog.log` | Python `logging` lines (`2023-… ,mmm - name - LEVEL - msg`) — `parsePylog`, `CRITICAL`→ERR, `logger` field |
+| `logrus.log` | logrus colored TTY lines (ANSI-wrapped `LEVEL[stamp] msg  k=v`) — `parseLogrus`, ANSI strip, elapsed-vs-timestamp |
 | `nornic.log` | Mojibake + emoji non-JSON lines — the sacred-passthrough guarantee |
 
 ## Architecture
@@ -69,6 +72,9 @@ Key design constraints a change must respect:
 | `internal/parse/parse.go` | Public `LineAs(line, format)` (+ `Line` auto-sniff wrapper), `Format`/`FormatFromString`, format dispatch, and the format-agnostic canonicalizer (time/level/msg alias extraction) |
 | `internal/parse/json.go` | JSON token-walk decoder (`parseJSON`), value render, `sniffJSON` |
 | `internal/parse/logfmt.go` | logfmt byte-scanner decoder (`parseLogfmt`), `sniffLogfmt`, quoted-value handling |
+| `internal/parse/glog.go` | glog/klog decoder (`parseGlog`/`sniffGlog`), `glogLevels` (I/W/E/F), shared `allDigits` |
+| `internal/parse/pylog.go` | Python `logging` decoder (`parsePylog`/`sniffPylog`) — fixed-width asctime + ` - `-separated name/level/msg |
+| `internal/parse/logrus.go` | logrus colored-text decoder (`parseLogrus`/`sniffLogrus`), `stripANSI`, `splitLogrusMessage`, `logrusLevels` |
 | `internal/enrich/severity.go` | `Severity` — pure, raises `Effective` on escalation patterns (`escalation` table) |
 | `internal/enrich/stacktrace.go` | `Stack(rec, module)` — entry point: finds a trace in `msg`/fields (`looksLikeTrace`), delegates parsing, picks a header (`pickHeader`) |
 | `internal/enrich/trace.go` | `traceGrammar` interface + the language registry `grammars = {goGrammar, nodeGrammar}` and `detectAndParse` — **the seam for new languages** |
@@ -97,6 +103,8 @@ Each package has adjacent `*_test.go` files; the parser also has `FuzzParseLine`
 - **Two distinct `Folder` drains:** `FlushIdle(now)` (timer, policy-based, reveals paused/aged runs) vs `Flush()` (EOF + before a passthrough/`--no-fold` line, unconditional). Only `Flush()` guarantees everything is emitted, and it runs first before a passthrough line so nothing jumps ahead of held runs.
 - **`--field` matches the KEY exactly but the VALUE as a case-insensitive substring**; the split is on the *first* `=` (so `a=b=c` → key `a`, substr `b=c`), and `key=` is a presence check.
 - **JSON must be exactly one object per line** — trailing content after the closing brace falls to passthrough. Sniff success ≠ parse success (a sniffed-logfmt line with an unterminated quote still passes through).
+- **Auto-sniff order is JSON → glog → pylog → logrus → logfmt** (in `LineAs`). logfmt is last because its sniff is the loosest (any leading `key=`); the others have tight, mutually-exclusive shape sniffs, so order among them is not load-bearing but cheapest-first is kept. Forcing `--format logfmt` parses *any* whitespace text into bare-key pairs (logfmt's valueless-key rule), so it is not a useful negative in tests — force `--format json` when asserting a non-JSON line passes through.
+- **logrus is only the colored TTY shape** (`LEVEL[stamp] msg  k=v` with ANSI). logrus's non-colored output is already logfmt. `sniffLogrus`/`parseLogrus` `stripANSI` first; the bracket must open on a digit (elapsed counter or timestamp), and a bare-digit elapsed is kept as an `elapsed` field, not the time. `glog`/`klog` carry no year, so their time is parsed with the `"0102 15:04:05"` layout (zero year, correct clock — the renderer shows only `HH:MM:SS`). Python `CRITICAL` maps to `LevelError` via `record.ParseLevel`.
 - **`FrameKind` zero value is `FrameStdlib`, not "unknown"** — `FrameProject`/`FrameThirdParty` are only meaningful after `enrich.Stack` runs. `Record.Stack` and `Record.Related` are pointers — nil-check them.
 - **The renderer is presentational only** — it never computes `Repeat`/`Corr`/`Related`/`Demoted`/`Effective`; upstream stages set those. Color is set from `isTerminal`, not detected in the renderer.
 
@@ -104,7 +112,7 @@ Each package has adjacent `*_test.go` files; the parser also has `FuzzParseLine`
 
 - Pure Go stdlib except `lipgloss` (styling). Keep the core dependency-light; color is gated on TTY detection (`os.ModeCharDevice`) so piped output stays clean text.
 - The `go-styleguide` and `go-test-author` skills are the source of truth for Go style and test scaffolding in this repo.
-- **Design docs (`docs/design/`):** multi-format parsing (logfmt) and Go+Node stack traces are **implemented**; continuation-line gluing (reassembling traces split across *physical* lines) and further stack languages (Python/Rust/Java) are **proposed, not built**. Don't assume a proposed doc reflects shipped code.
+- **Design docs (`docs/design/`):** multi-format parsing (logfmt, plus glog/klog, Python `logging`, logrus colored text) and Go+Node stack traces are **implemented**; continuation-line gluing (reassembling traces split across *physical* lines) and further stack languages (Python/Rust/Java) are **proposed, not built**. Don't assume a proposed doc reflects shipped code.
 
 ### Keeping the docs in sync
 

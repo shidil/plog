@@ -1,0 +1,6 @@
+2023-10-05 14:29:00,100 - storefront.http - INFO - starting HTTP server on :4000
+2023-10-05 14:29:01,204 - storefront.location - INFO - resolving location slug slug=downtown
+2023-10-05 14:29:01,998 - storefront.metrics - WARNING - failed to upload metrics: connection refused to collector:4317
+2023-10-05 14:29:02,115 - storefront.location - INFO - resolving location slug slug=harbor
+2023-10-05 14:29:02,330 - storefront.location - ERROR - Traceback (most recent call last):
+2023-10-05 14:29:02,331 - storefront.location - CRITICAL - unhandled exception in request handler - shutting down

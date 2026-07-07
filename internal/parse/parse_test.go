@@ -181,6 +181,15 @@ func FuzzParseLine(f *testing.F) {
 		`{"broken":`,
 		"{\x00\x01}",
 		`{"nested":{"deep":[1,{"x":true}]}}`,
+		"I0605 14:23:01.123456   12345 f.go:1] glog line",
+		"I0605 14:23:01",        // glog header with no closing bracket
+		"E9999 99:99:99] weird", // out-of-range but shaped like glog
+		"2023-10-05 14:23:01,123 - name - INFO - python line",
+		"2023-10-05 14:23:01,123 - only two - fields",
+		"\x1b[36mINFO\x1b[0m[0000] logrus line   k=v",
+		"\x1b[31mERRO\x1b[0m[2023-10-05T14:23:01Z] logrus ts",
+		"ERROR[x] not logrus",
+		"\x1b[",
 	}
 	for _, s := range seeds {
 		f.Add(s)

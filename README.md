@@ -1,7 +1,7 @@
 # plog
 
-A zero-config pretty-printer for structured logs (JSON or logfmt). Pipe a noisy
-log stream in, get a readable one out:
+A zero-config pretty-printer for structured logs (JSON, logfmt, glog/klog,
+Python `logging`, logrus). Pipe a noisy log stream in, get a readable one out:
 
 ```sh
 docker logs -f storefront | plog
@@ -36,10 +36,11 @@ This is a spike. It implements the four highest-leverage ideas from
   call` tied to the panic just before it. The link is a heuristic hint, looks
   only backward (never reorders the stream), and is bounded in memory.
   `--no-correlate` disables it.
-- **Multi-format parsing** — JSON and logfmt (`key=value`) lines are decoded
-  into the same record, so the whole pipeline lights up for both. The format is
+- **Multi-format parsing** — JSON, logfmt (`key=value`), glog/klog, Python
+  `logging`, and logrus colored text are all decoded into the same record, so
+  the whole pipeline lights up regardless of source format. The format is
   sniffed per line by default; `--format` pins it.
-- **Robust passthrough** — non-JSON/non-logfmt or malformed lines are emitted
+- **Robust passthrough** — unrecognized or malformed lines are emitted
   verbatim; a bad line never interrupts the stream.
 - **Filtering** — `--min-level` (against the *re-ranked* level), `--grep` (a
   regexp over message and field values), and `--field key=val` (a repeatable
@@ -80,8 +81,8 @@ plog [flags]            # reads stdin, writes stdout
 
 --module string         import-path prefix treated as project code
                         (default "github.com/example")
---format string         input format: auto (sniff), json, logfmt, or text
-                        (passthrough) (default "auto")
+--format string         input format: auto (sniff), json, logfmt, glog,
+                        python, logrus, or text (passthrough) (default "auto")
 --no-fold               do not collapse consecutive near-identical lines
 --no-columns            do not demote fields constant across the recent window
 --no-correlate          do not group records by request or link related events

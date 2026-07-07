@@ -59,7 +59,7 @@ func main() {
 	noColor := flag.Bool("no-color", false, "disable ANSI color even on a terminal")
 	minLevel := flag.String("min-level", "", "drop parsed records below this effective severity (debug|info|warn|error)")
 	grep := flag.String("grep", "", "show only lines matching this regular expression (message/fields, or raw for passthrough)")
-	format := flag.String("format", "auto", "input format: auto (sniff), json, logfmt, or text (passthrough)")
+	format := flag.String("format", "auto", "input format: auto (sniff), json, logfmt, glog, python, logrus, or text (passthrough)")
 	showVersion := flag.Bool("version", false, "print version information and exit")
 	var fields fieldFlags
 	flag.Var(&fields, "field", "show only records whose named field contains a substring, e.g. -field rpc.method=Resolve (repeatable)")
@@ -72,7 +72,7 @@ func main() {
 
 	inFormat, ok := parse.FormatFromString(*format)
 	if !ok {
-		fmt.Fprintf(os.Stderr, "plog: unknown -format %q: want auto, json, logfmt, or text\n", *format)
+		fmt.Fprintf(os.Stderr, "plog: unknown -format %q: want auto, json, logfmt, glog, python, logrus, or text\n", *format)
 		os.Exit(1)
 	}
 

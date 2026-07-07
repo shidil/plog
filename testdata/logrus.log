@@ -1,0 +1,5 @@
+[36mINFO[0m[0000] starting HTTP server                       addr=:4000
+[36mINFO[0m[0001] resolving location slug                    slug=downtown
+[33mWARN[0m[0001] failed to upload metrics                   error="connection refused" collector=:4317
+[31mERRO[0m[2023-10-05T14:29:02Z] runtime error: nil pointer dereference    rpc.method=ResolveLocationSlug
+[36mINFO[0m[0002] resolving location slug                    slug=harbor

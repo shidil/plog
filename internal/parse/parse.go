@@ -23,10 +23,13 @@ type Format int
 
 // Input formats.
 const (
-	FormatAuto   Format = iota // sniff JSON, then logfmt, else passthrough
+	FormatAuto   Format = iota // sniff JSON/glog/pylog/logrus/logfmt, else passthrough
 	FormatJSON                 // force JSON, passthrough on failure
 	FormatLogfmt               // force logfmt, passthrough on failure
 	FormatText                 // always passthrough
+	FormatGlog                 // force glog/klog, passthrough on failure
+	FormatPylog                // force Python logging, passthrough on failure
+	FormatLogrus               // force logrus colored text, passthrough on failure
 )
 
 // FormatFromString maps a --format flag value to a Format, reporting ok ==
@@ -39,6 +42,12 @@ func FormatFromString(s string) (Format, bool) {
 		return FormatJSON, true
 	case "logfmt":
 		return FormatLogfmt, true
+	case "glog", "klog":
+		return FormatGlog, true
+	case "python", "pylog":
+		return FormatPylog, true
+	case "logrus":
+		return FormatLogrus, true
 	case "text":
 		return FormatText, true
 	default:
@@ -75,6 +84,18 @@ func LineAs(raw string, format Format) record.Record {
 		if pairs, ok := parseLogfmt(raw); ok {
 			return finish(raw, pairs)
 		}
+	case FormatGlog:
+		if pairs, ok := parseGlog(raw); ok {
+			return finish(raw, pairs)
+		}
+	case FormatPylog:
+		if pairs, ok := parsePylog(raw); ok {
+			return finish(raw, pairs)
+		}
+	case FormatLogrus:
+		if pairs, ok := parseLogrus(raw); ok {
+			return finish(raw, pairs)
+		}
 	case FormatText:
 		// Always passthrough.
 	default: // FormatAuto
@@ -82,6 +103,18 @@ func LineAs(raw string, format Format) record.Record {
 		switch {
 		case sniffJSON(trimmed):
 			if pairs, ok := parseJSON(raw); ok {
+				return finish(raw, pairs)
+			}
+		case sniffGlog(trimmed):
+			if pairs, ok := parseGlog(raw); ok {
+				return finish(raw, pairs)
+			}
+		case sniffPylog(trimmed):
+			if pairs, ok := parsePylog(raw); ok {
+				return finish(raw, pairs)
+			}
+		case sniffLogrus(trimmed):
+			if pairs, ok := parseLogrus(raw); ok {
 				return finish(raw, pairs)
 			}
 		case sniffLogfmt(trimmed):
@@ -157,6 +190,7 @@ var timeLayouts = []string{
 	time.RFC3339,
 	"2006-01-02T15:04:05",
 	"2006-01-02 15:04:05",
+	"0102 15:04:05", // glog/klog: month-day + clock, no year
 }
 
 // parseTime decodes a timestamp string, trying the textual layouts and then

@@ -45,7 +45,7 @@ func ParseLevel(s string) Level {
 		return LevelInfo
 	case "WARN", "warn", "Warn", "WARNING", "warning":
 		return LevelWarn
-	case "ERROR", "error", "Error", "ERR", "err", "FATAL", "fatal", "PANIC", "panic":
+	case "ERROR", "error", "Error", "ERR", "err", "FATAL", "fatal", "PANIC", "panic", "CRITICAL", "critical", "Critical":
 		return LevelError
 	default:
 		return LevelUnknown
