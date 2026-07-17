@@ -29,11 +29,13 @@ would be a dead link from any remote/container tail — worse than no link.
 
 ## Design
 
-Opt-in, TTY-gated, resolution-checked. Two flags:
+Opt-in, TTY-gated, resolution-checked. Flags:
 
 - `--link SCHEME` — an editor preset (`vscode`, `cursor`, `zed`, `idea`, `file`) or a
   URI template containing `{path}` (plus optional `{line}`/`{col}`). Empty = off.
 - `--src DIR` — the local source root paths resolve against (default: CWD).
+- `--github OWNER/REPO[@REF]` — link to source on github.com instead of a local
+  editor (see below). Mutually exclusive with `--link`.
 
 ### Resolution: longest-suffix existence match (`internal/link`)
 
@@ -67,6 +69,31 @@ filesystem lookup and URI formatting live in `internal/link`, not the renderer �
 consistent with "the renderer never computes, upstream supplies." The style is
 applied inside the link text so color and clickability compose.
 
+### GitHub links, for remote logs (`--github`)
+
+The existence check makes `--link` a local-dev feature: from a remote/container
+tail the source isn't on disk, so nothing links. `--github owner/repo[@ref]`
+(ref default `main`) covers that case — it links to the source on github.com and
+needs **no local file**. `GitHubLinker` derives the repo-relative path by
+stripping a prefix from the frame path, in order of specificity:
+
+1. the `owner/repo` slug, if present (`github.com/owner/repo/pkg/f.go` → `pkg/f.go`);
+2. else the `--module` import prefix — **the repo need not be named after the
+   module**, so a `github.com/example/storefront/...` frame maps straight onto
+   `--github oolio-group/bookings`. This is the key decoupling: the destination
+   repo (`--github`) and the strip prefix (`--module`) are independent;
+3. else a `--src` suffix-match (which returns the repo-relative suffix as a
+   byproduct), for paths with neither slug nor module prefix.
+
+Result: `https://github.com/owner/repo/blob/<ref>/<rel>#L<line>`. No prefix
+matches and no checkout → no link. The repo-relative portion is only as precise
+as the stripped prefix: the org-level `--module` default leaves a leading
+`storefront/`; set `--module` to the full module path to trim it. `--link` and
+`--github` are mutually exclusive: one link target per frame.
+
+Refs pinned to `main` drift as the file changes; pass `@<tag>`/`@<sha>` for a
+stable line anchor.
+
 ### Gating
 
 `main.frameLinker` validates the scheme **even when piped** (a bad `--link` fails
@@ -86,7 +113,9 @@ the same `os.ModeCharDevice` signal that gates color, applied independently
 
 ## Files
 
-- `internal/link/link.go` (+ `link_test.go`) — `Linker`, resolution, formatting.
+- `internal/link/link.go` (+ `link_test.go`) — `Linker` (editor), `GitHubLinker`
+  (`--github`), resolution, formatting.
 - `internal/render/plain.go` — `FrameLinker` interface, `linkedLocation`,
   `hyperlink` (OSC 8 wrap).
-- `cmd/plog/main.go` — `--link`/`--src` flags, `frameLinker` (validate + TTY gate).
+- `cmd/plog/main.go` — `--link`/`--src`/`--github` flags, `frameLinker`
+  (validate + mutual exclusion + TTY gate).

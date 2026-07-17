@@ -42,7 +42,7 @@ func New(scheme, src string) (*Linker, error) {
 // found under the source root — so a remote/container trace, a module-cache
 // dependency, or a minified bundle path yields no link rather than a dead one.
 func (l *Linker) FrameURI(f record.Frame) string {
-	abs, ok := resolve(l.src, f.File)
+	abs, _, ok := resolve(l.src, f.File)
 	if !ok {
 		return ""
 	}
@@ -51,27 +51,109 @@ func (l *Linker) FrameURI(f record.Frame) string {
 
 // resolve finds the local file for a runtime-emitted path by trying successively
 // shorter path suffixes joined onto src — longest first — and returning the first
-// that names an existing regular file. This drops the leading module-path,
-// container, or build-output segments that do not exist locally without needing
-// to know the module prefix, and works the same across languages.
-func resolve(src, file string) (string, bool) {
+// that names an existing regular file. It returns the absolute path and the
+// matched suffix (the path relative to src, i.e. the repo-relative path when src
+// is the repo root). Trying suffixes drops the leading module-path, container, or
+// build-output segments that do not exist locally without needing to know the
+// module prefix, and works the same across languages.
+func resolve(src, file string) (abs, rel string, ok bool) {
 	segs := strings.Split(filepath.ToSlash(file), "/")
 	for start := range segs {
 		if segs[start] == "" {
 			continue
 		}
-		cand := filepath.Join(append([]string{src}, segs[start:]...)...)
+		suffix := segs[start:]
+		cand := filepath.Join(append([]string{src}, suffix...)...)
 		fi, err := os.Stat(cand)
 		if err != nil || !fi.Mode().IsRegular() {
 			continue
 		}
 		abs, err := filepath.Abs(cand)
 		if err != nil {
-			return "", false
+			return "", "", false
 		}
-		return abs, true
+		return abs, strings.Join(suffix, "/"), true
 	}
-	return "", false
+	return "", "", false
+}
+
+// GitHubLinker builds github.com blob URLs for stack frames, so a trace from a
+// remote or containerized process links to the source on GitHub even when it is
+// not checked out locally. Unlike Linker it does not require the file on disk: it
+// derives the repo-relative path from the frame path itself.
+type GitHubLinker struct {
+	owner, repo, ref string
+	module           string // import-path prefix to strip for the repo-relative path (--module); repo name need not match it
+	src              string // optional local checkout, a fallback when neither slug nor module prefix is in the path
+}
+
+// NewGitHub returns a GitHubLinker from a spec of the form "owner/repo" or
+// "owner/repo@ref" (ref defaults to "main"). module is the import-path prefix
+// (--module) stripped to obtain the repo-relative path, so the GitHub repo need
+// not be named after the module. src is an optional local source root used as a
+// last-resort fallback (e.g. non-Go traces with no strippable prefix); "" off.
+func NewGitHub(spec, module, src string) (*GitHubLinker, error) {
+	slug, ref, ok := strings.Cut(spec, "@")
+	if !ok {
+		ref = "main"
+	}
+	owner, repo, ok := strings.Cut(slug, "/")
+	if !ok || owner == "" || repo == "" || ref == "" {
+		return nil, fmt.Errorf("invalid --github %q: want owner/repo or owner/repo@ref", spec)
+	}
+	return &GitHubLinker{owner: owner, repo: repo, ref: ref, module: module, src: src}, nil
+}
+
+// FrameURI returns the github.com blob URL for f, or "" when the repo-relative
+// path cannot be derived (a non-Go path with no local checkout to fall back on).
+func (l *GitHubLinker) FrameURI(f record.Frame) string {
+	rel := l.repoRelative(f)
+	if rel == "" {
+		return ""
+	}
+	u := "https://github.com/" + l.owner + "/" + l.repo + "/blob/" + l.ref + "/" + rel
+	if f.Line > 0 {
+		u += fmt.Sprintf("#L%d", f.Line)
+	}
+	return u
+}
+
+// repoRelative derives f's path relative to the repository root, trying in order
+// of specificity: (1) the "owner/repo" slug in the frame path (pins the repo root
+// exactly, the github.com/owner/repo/... case); (2) the module import prefix —
+// the repo need not be named after the module, so the module-relative path maps
+// straight onto the given repo; (3) a local checkout under src. Empty if none
+// apply, so a frame with no strippable prefix and no checkout gets no link.
+func (l *GitHubLinker) repoRelative(f record.Frame) string {
+	file := filepath.ToSlash(f.File)
+	if rel, ok := afterPrefix(file, l.owner+"/"+l.repo); ok {
+		return rel
+	}
+	if rel, ok := afterPrefix(file, l.module); ok {
+		return rel
+	}
+	if l.src != "" {
+		if _, rel, ok := resolve(l.src, f.File); ok {
+			return rel
+		}
+	}
+	return ""
+}
+
+// afterPrefix returns the path following "prefix/" when prefix occurs on a
+// segment boundary in file and leaves a non-empty remainder.
+func afterPrefix(file, prefix string) (string, bool) {
+	prefix = strings.Trim(prefix, "/")
+	if prefix == "" {
+		return "", false
+	}
+	prefix += "/"
+	i := strings.Index(file, prefix)
+	if i != 0 && !(i > 0 && file[i-1] == '/') {
+		return "", false
+	}
+	rel := file[i+len(prefix):]
+	return rel, rel != ""
 }
 
 // formatter maps a scheme name or URI template to a function rendering a frame's

@@ -29,12 +29,15 @@ func TestResolveLongestSuffix(t *testing.T) {
 	src := t.TempDir()
 	want := writeFile(t, src, "internal/rpc/location_rpc.go")
 
-	got, ok := resolve(src, "github.com/example/storefront/internal/rpc/location_rpc.go")
+	got, rel, ok := resolve(src, "github.com/example/storefront/internal/rpc/location_rpc.go")
 	if !ok {
 		t.Fatalf("resolve did not find the file under %q", src)
 	}
 	if got != want {
-		t.Errorf("resolve = %q, want %q", got, want)
+		t.Errorf("resolve abs = %q, want %q", got, want)
+	}
+	if wantRel := "internal/rpc/location_rpc.go"; rel != wantRel {
+		t.Errorf("resolve rel = %q, want %q", rel, wantRel)
 	}
 }
 
@@ -42,7 +45,7 @@ func TestResolveLongestSuffix(t *testing.T) {
 // container trace) resolves to nothing rather than a wrong file.
 func TestResolveMissing(t *testing.T) {
 	src := t.TempDir()
-	if got, ok := resolve(src, "/app/does/not/exist.go"); ok {
+	if got, _, ok := resolve(src, "/app/does/not/exist.go"); ok {
 		t.Errorf("resolve(%q) = %q, true; want no match", "/app/does/not/exist.go", got)
 	}
 }
@@ -54,7 +57,7 @@ func TestResolveSkipsDirectories(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(src, "pkg"), 0o755); err != nil {
 		t.Fatalf("MkdirAll: %v", err)
 	}
-	if _, ok := resolve(src, "example.com/pkg"); ok {
+	if _, _, ok := resolve(src, "example.com/pkg"); ok {
 		t.Error("resolve matched a directory, want no match")
 	}
 }
@@ -110,5 +113,86 @@ func TestFrameURIUnresolvedEmpty(t *testing.T) {
 func TestNewRejectsUnknownScheme(t *testing.T) {
 	if _, err := New("emacs", ""); err == nil {
 		t.Error("New(\"emacs\") = nil error, want an error naming the accepted forms")
+	}
+}
+
+// TestGitHubFrameURI checks that a Go frame path (which embeds the owner/repo
+// slug) links to github.com without needing a local file, honoring the ref and
+// omitting the line anchor when the frame carries no line.
+func TestGitHubFrameURI(t *testing.T) {
+	tests := []struct {
+		spec string
+		line int
+		want string
+	}{
+		{"shidil/storefront@main", 72, "https://github.com/shidil/storefront/blob/main/internal/rpc/location_rpc.go#L72"},
+		{"shidil/storefront", 72, "https://github.com/shidil/storefront/blob/main/internal/rpc/location_rpc.go#L72"}, // ref defaults to main
+		{"shidil/storefront@v1.2.0", 72, "https://github.com/shidil/storefront/blob/v1.2.0/internal/rpc/location_rpc.go#L72"},
+		{"shidil/storefront@main", 0, "https://github.com/shidil/storefront/blob/main/internal/rpc/location_rpc.go"}, // no line => no anchor
+	}
+	for _, test := range tests {
+		l, err := NewGitHub(test.spec, "", "")
+		if err != nil {
+			t.Fatalf("NewGitHub(%q): %v", test.spec, err)
+		}
+		got := l.FrameURI(record.Frame{File: "github.com/shidil/storefront/internal/rpc/location_rpc.go", Line: test.line})
+		if got != test.want {
+			t.Errorf("NewGitHub(%q).FrameURI(line=%d) = %q, want %q", test.spec, test.line, got, test.want)
+		}
+	}
+}
+
+// TestGitHubSrcFallback checks that a frame path without the slug (e.g. a non-Go
+// trace) still links when a local checkout under src supplies the repo-relative
+// path.
+func TestGitHubSrcFallback(t *testing.T) {
+	src := t.TempDir()
+	writeFile(t, src, "app/handler.py")
+
+	l, err := NewGitHub("shidil/svc@main", "", src)
+	if err != nil {
+		t.Fatalf("NewGitHub: %v", err)
+	}
+	got := l.FrameURI(record.Frame{File: "/srv/deploy/app/handler.py", Line: 10})
+	want := "https://github.com/shidil/svc/blob/main/app/handler.py#L10"
+	if got != want {
+		t.Errorf("FrameURI(src-fallback) = %q, want %q", got, want)
+	}
+}
+
+// TestGitHubNoRepoRelativeEmpty checks that a frame that embeds no slug and has
+// no local checkout to fall back on yields no link rather than a wrong one.
+func TestGitHubNoRepoRelativeEmpty(t *testing.T) {
+	l, err := NewGitHub("shidil/svc", "", "")
+	if err != nil {
+		t.Fatalf("NewGitHub: %v", err)
+	}
+	if got := l.FrameURI(record.Frame{File: "/srv/deploy/app/handler.py", Line: 10}); got != "" {
+		t.Errorf("FrameURI(no slug, no src) = %q, want %q", got, "")
+	}
+}
+
+// TestNewGitHubInvalid checks that a spec without an owner/repo split is a
+// startup error.
+func TestNewGitHubInvalid(t *testing.T) {
+	for _, spec := range []string{"noslash", "owner/", "/repo", "owner/repo@"} {
+		if _, err := NewGitHub(spec, "", ""); err == nil {
+			t.Errorf("NewGitHub(%q) = nil error, want an error", spec)
+		}
+	}
+}
+
+// TestGitHubModuleStrip checks that the GitHub repo need not be named after the
+// module: with the slug absent from the frame path, the module prefix is stripped
+// and the remainder mapped onto the given repo.
+func TestGitHubModuleStrip(t *testing.T) {
+	l, err := NewGitHub("oolio-group/bookings@main", "github.com/example/storefront", "")
+	if err != nil {
+		t.Fatalf("NewGitHub: %v", err)
+	}
+	got := l.FrameURI(record.Frame{File: "github.com/example/storefront/internal/rpc/location_rpc.go", Line: 72})
+	want := "https://github.com/oolio-group/bookings/blob/main/internal/rpc/location_rpc.go#L72"
+	if got != want {
+		t.Errorf("FrameURI(module-strip, repo != module) = %q, want %q", got, want)
 	}
 }

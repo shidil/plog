@@ -99,6 +99,9 @@ plog [flags]            # reads stdin, writes stdout
                         {path}/{line}/{col} (TTY only)
 --src string            local source root that --link resolves frame paths
                         against (default: current directory)
+--github string         link frames to source on github.com: owner/repo or
+                        owner/repo@ref (ref default main); no local checkout
+                        needed (TTY only)
 --version               print version information and exit
 ```
 
@@ -110,6 +113,21 @@ itself — the terminal does. Frame paths are resolved by finding the longest
 suffix that exists under `--src`, so a path from a remote/container tail (or a
 minified bundle) that has no local file simply gets no link rather than a dead
 one. TTY-only; ignored when output is piped or redirected.
+
+For logs from a **remote** process (where the source isn't on your machine at
+all), `--github owner/repo[@ref]` links each frame to the source on github.com
+instead — no local checkout required:
+
+```sh
+docker logs -f storefront | plog --github example/storefront@v1.4.0
+```
+
+The repo need not be named after your module: plog gets the repo-relative path
+by stripping the `owner/repo` slug or the `--module` prefix from the frame path
+(or, for paths with neither, a `--src` checkout). The path is only as precise as
+`--module` — set it to your full module path (e.g.
+`--module github.com/oolio-group/bookings`) so the link points at the right file.
+`--link` and `--github` are mutually exclusive.
 
 Install:
 
