@@ -24,6 +24,7 @@ import (
 	"github.com/shidil/plog/internal/parse"
 	"github.com/shidil/plog/internal/record"
 	"github.com/shidil/plog/internal/render"
+	"github.com/shidil/plog/internal/summary"
 )
 
 // Build metadata, stamped at release time via -ldflags (see .goreleaser.yaml):
@@ -65,6 +66,7 @@ func main() {
 	linkScheme := flag.String("link", "", "make resolvable stack frames clickable via OSC 8 hyperlinks: an editor preset (vscode|cursor|zed|idea|file) or a URI template with {path}/{line}/{col} (TTY only)")
 	srcRoot := flag.String("src", "", "local source root that --link resolves frame paths against (default: current directory)")
 	githubRepo := flag.String("github", "", "make stack frames link to source on github.com: owner/repo or owner/repo@ref (ref default main); works without a local checkout (TTY only)")
+	summaryFooter := flag.Bool("summary", false, "print a triage summary (severity counts + unique warn/error templates) after input ends")
 	showVersion := flag.Bool("version", false, "print version information and exit")
 	var fields fieldFlags
 	flag.Var(&fields, "field", "show only records whose named field contains a substring, e.g. -field rpc.method=Resolve (repeatable)")
@@ -104,6 +106,7 @@ func main() {
 		fold:      !*noFold,
 		columns:   !*noColumns,
 		correlate: !*noCorrelate,
+		summary:   *summaryFooter,
 	}
 	if err := run(os.Stdin, os.Stdout, cfg, flt, opts); err != nil {
 		fmt.Fprintln(os.Stderr, "plog:", err)
@@ -190,6 +193,7 @@ type options struct {
 	fold      bool         // collapse consecutive near-identical lines
 	columns   bool         // demote fields constant across the recent window
 	correlate bool         // group by request and link related events
+	summary   bool         // print a triage summary footer after input ends
 }
 
 // run drives the pipeline: each line is parsed, enriched, filtered, folded, and
@@ -205,6 +209,7 @@ func run(in io.Reader, out io.Writer, cfg render.PlainConfig, flt *filter.Filter
 	cor := enrich.NewCorrelator(opts.correlate)
 	cols := enrich.NewColumns(opts.columns)
 	folder := enrich.NewFolder(opts.fold)
+	sum := summary.New(opts.summary)
 
 	emit := func(recs []record.Record) error {
 		if len(recs) == 0 {
@@ -226,6 +231,10 @@ func run(in io.Reader, out io.Writer, cfg render.PlainConfig, flt *filter.Filter
 		if !flt.Match(rec) {
 			return nil
 		}
+		// Observe after the filter (the summary describes what was displayed)
+		// and before folding (counts stay exact per record, immune to fold
+		// splits). It annotates nothing, so the stream is unaffected.
+		sum.Observe(rec)
 		rec = cor.Mark(rec)
 		rec = cols.Mark(rec)
 		return emit(folder.Add(rec, now))
@@ -242,9 +251,18 @@ func run(in io.Reader, out io.Writer, cfg render.PlainConfig, flt *filter.Filter
 		select {
 		case line, ok := <-lines:
 			if !ok {
-				// Input closed: emit the final run, then report any scan error.
+				// Input closed: emit the final run, append the summary footer
+				// if asked, then report any scan error.
 				if err := emit(folder.Flush()); err != nil {
 					return err
+				}
+				if opts.summary {
+					if err := renderer.RenderSummary(sum.Report()); err != nil {
+						return err
+					}
+					if err := bw.Flush(); err != nil {
+						return err
+					}
 				}
 				return <-errc
 			}

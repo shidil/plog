@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/shidil/plog/internal/record"
+	"github.com/shidil/plog/internal/summary"
 )
 
 func renderOne(t *testing.T, rec record.Record, cfg PlainConfig) string {
@@ -197,5 +198,73 @@ func TestRenderExpandStackShowsAllFrames(t *testing.T) {
 	}
 	if strings.Contains(got, "framework frames") {
 		t.Errorf("expand-stack should not fold frames:\n%s", got)
+	}
+}
+
+func TestRenderSummaryFooterShape(t *testing.T) {
+	rep := summary.Report{
+		Errors: 4, UniqueErrors: 2,
+		Warns: 1, UniqueWarns: 1,
+		Infos:       37,
+		Passthrough: 3,
+		First:       time.Date(2026, 7, 21, 14, 29, 1, 0, time.UTC),
+		Last:        time.Date(2026, 7, 21, 14, 32, 47, 0, time.UTC),
+		TopErrors: []summary.Line{
+			{Count: 3, Message: "Failed to write image to cache"},
+			{Count: 1, Message: "unhandledRejection: EACCES"},
+		},
+		TopWarns: []summary.Line{{Count: 1, Message: "falling back to unoptimized response"}},
+	}
+
+	var b strings.Builder
+	if err := NewPlain(&b, PlainConfig{}).RenderSummary(rep); err != nil {
+		t.Fatalf("RenderSummary: %v", err)
+	}
+
+	want := "── summary " + strings.Repeat("─", 45) + "\n" +
+		"4 errors (2 unique) · 1 warn (1 unique) · 37 info · 3 passthrough\n" +
+		"span 14:29:01–14:32:47\n" +
+		"\n" +
+		"  ERR  ×3  Failed to write image to cache\n" +
+		"  ERR  ×1  unhandledRejection: EACCES\n" +
+		"  WARN ×1  falling back to unoptimized response\n"
+	if got := b.String(); got != want {
+		t.Errorf("RenderSummary output:\n%q\nwant:\n%q", got, want)
+	}
+}
+
+func TestRenderSummaryZeroErrorsIsTheVerdict(t *testing.T) {
+	rep := summary.Report{Infos: 12}
+
+	var b strings.Builder
+	if err := NewPlain(&b, PlainConfig{}).RenderSummary(rep); err != nil {
+		t.Fatalf("RenderSummary: %v", err)
+	}
+
+	want := "── summary " + strings.Repeat("─", 45) + "\n" +
+		"0 errors · 0 warns · 12 info\n"
+	if got := b.String(); got != want {
+		t.Errorf("RenderSummary output:\n%q\nwant:\n%q", got, want)
+	}
+}
+
+func TestRenderSummaryOverflowLinesAreExplicit(t *testing.T) {
+	rep := summary.Report{
+		Errors: 30, UniqueErrors: 10,
+		TopErrors:  []summary.Line{{Count: 21, Message: "boom"}},
+		MoreErrors: 9,
+		Untracked:  12,
+	}
+
+	var b strings.Builder
+	if err := NewPlain(&b, PlainConfig{}).RenderSummary(rep); err != nil {
+		t.Fatalf("RenderSummary: %v", err)
+	}
+
+	got := b.String()
+	for _, want := range []string{"… +9 more\n", "… +12 more warn/error lines beyond the tracked templates\n"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("RenderSummary output missing %q:\n%s", want, got)
+		}
 	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/shidil/plog/internal/record"
+	"github.com/shidil/plog/internal/summary"
 )
 
 // Plain is a streaming, line-oriented Renderer. It prints one compact line per
@@ -97,6 +98,93 @@ func (p *Plain) Render(rec record.Record) error {
 
 	_, err := io.WriteString(p.w, b.String())
 	return err
+}
+
+// RenderSummary writes the --summary triage footer: a rule, per-severity
+// counts with unique-template counts, the time span, and one whole
+// representative line per distinct warn/error template. It is deliberately not
+// part of the Renderer interface — that seam is the per-record contract a
+// future TUI implements; the footer is specific to this EOF-bounded, streaming
+// renderer.
+func (p *Plain) RenderSummary(rep summary.Report) error {
+	var b strings.Builder
+	b.WriteString(p.paint(p.dim, "── summary "+strings.Repeat("─", 45)))
+	b.WriteByte('\n')
+	b.WriteString(p.summaryCounts(rep))
+	b.WriteByte('\n')
+	if !rep.First.IsZero() {
+		span := rep.First.Format("15:04:05")
+		if !rep.Last.Equal(rep.First) {
+			span += "–" + rep.Last.Format("15:04:05")
+		}
+		b.WriteString(p.paint(p.dim, "span "+span))
+		b.WriteByte('\n')
+	}
+	if len(rep.TopErrors)+len(rep.TopWarns) > 0 {
+		b.WriteByte('\n')
+		p.writeSummaryLines(&b, record.LevelError, rep.TopErrors, rep.MoreErrors)
+		p.writeSummaryLines(&b, record.LevelWarn, rep.TopWarns, rep.MoreWarns)
+	}
+	if rep.Untracked > 0 {
+		fmt.Fprintf(&b, "  %s\n", p.paint(p.dim,
+			fmt.Sprintf("… +%d more warn/error lines beyond the tracked templates", rep.Untracked)))
+	}
+	_, err := io.WriteString(p.w, b.String())
+	return err
+}
+
+// summaryCounts renders the footer's verdict line. Errors and warns always
+// appear — "0 errors" is the answer triage came for — while info, unknown, and
+// passthrough tallies appear only when nonzero.
+func (p *Plain) summaryCounts(rep summary.Report) string {
+	errs := countWithUnique(rep.Errors, "error", rep.UniqueErrors)
+	if rep.Errors > 0 {
+		errs = p.paint(p.levels[record.LevelError], errs)
+	}
+	warns := countWithUnique(rep.Warns, "warn", rep.UniqueWarns)
+	if rep.Warns > 0 {
+		warns = p.paint(p.levels[record.LevelWarn], warns)
+	}
+	segs := []string{errs, warns}
+	if rep.Infos > 0 {
+		segs = append(segs, fmt.Sprintf("%d info", rep.Infos))
+	}
+	if rep.Unknown > 0 {
+		segs = append(segs, fmt.Sprintf("%d unknown", rep.Unknown))
+	}
+	if rep.Passthrough > 0 {
+		segs = append(segs, fmt.Sprintf("%d passthrough", rep.Passthrough))
+	}
+	return strings.Join(segs, " · ")
+}
+
+// countWithUnique formats a level tally like "4 errors (2 unique)"; the
+// unique-template count is omitted when the tally is zero.
+func countWithUnique(n int, noun string, unique int) string {
+	s := fmt.Sprintf("%d %s", n, noun)
+	if n != 1 {
+		s += "s"
+	}
+	if n > 0 {
+		s += fmt.Sprintf(" (%d unique)", unique)
+	}
+	return s
+}
+
+// writeSummaryLines appends one badge-prefixed line per representative
+// template, then an explicit "+N more" overflow line when the level had more
+// distinct templates than were shown.
+func (p *Plain) writeSummaryLines(b *strings.Builder, lvl record.Level, lines []summary.Line, more int) {
+	if len(lines) == 0 {
+		return
+	}
+	st := p.levels[lvl]
+	for _, ln := range lines {
+		fmt.Fprintf(b, "  %s ×%d  %s\n", p.paint(st, fmt.Sprintf("%-4s", lvl.String())), ln.Count, flatten(ln.Message))
+	}
+	if more > 0 {
+		fmt.Fprintf(b, "  %s\n", p.paint(p.dim, fmt.Sprintf("… +%d more", more)))
+	}
 }
 
 // badge renders the level token, marking a semantic re-rank as "INFO→ERR".

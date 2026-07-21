@@ -72,6 +72,54 @@ func TestScanLines_stopsOnDone(t *testing.T) {
 	}
 }
 
+// TestRunSummaryFooter checks the --summary contract end to end: the footer is
+// appended after the stream at EOF, counts by the re-ranked severity, and the
+// stream bytes above it are identical to a run without the flag.
+func TestRunSummaryFooter(t *testing.T) {
+	input := `{"time":"2026-07-21T14:29:01Z","level":"info","msg":"listening on :8080"}
+{"time":"2026-07-21T14:29:02Z","level":"info","msg":"panic: nil pointer dereference"}
+{"time":"2026-07-21T14:29:03Z","level":"warn","msg":"slow request"}
+not json at all
+`
+	flt, err := filter.New("", "", nil)
+	if err != nil {
+		t.Fatalf("filter.New: %v", err)
+	}
+	cfg := render.PlainConfig{Color: false}
+	opts := options{format: parse.FormatAuto, module: "github.com/example", fold: true}
+
+	runToString := func(o options) string {
+		var out strings.Builder
+		if err := run(strings.NewReader(input), &out, cfg, flt, o); err != nil {
+			t.Fatalf("run: %v", err)
+		}
+		return out.String()
+	}
+
+	plain := runToString(opts)
+	opts.summary = true
+	withFooter := runToString(opts)
+
+	if !strings.HasPrefix(withFooter, plain) {
+		t.Errorf("--summary changed the stream itself:\nwithout: %q\nwith:    %q", plain, withFooter)
+	}
+	footer := strings.TrimPrefix(withFooter, plain)
+	if !strings.Contains(footer, "── summary") {
+		t.Fatalf("footer missing summary rule:\n%s", footer)
+	}
+	// The INFO panic is re-ranked to ERR and must count as the error.
+	for _, want := range []string{
+		"1 error (1 unique) · 1 warn (1 unique) · 1 info · 1 passthrough",
+		"span 14:29:01–14:29:03",
+		"ERR  ×1  panic: nil pointer dereference",
+		"WARN ×1  slow request",
+	} {
+		if !strings.Contains(footer, want) {
+			t.Errorf("footer missing %q:\n%s", want, footer)
+		}
+	}
+}
+
 // BenchmarkPipeline drives the full stdin-to-stdout pipeline over a large
 // in-memory stream, validating IDEA.md's "scales to high-volume docker logs -f"
 // claim and guarding against throughput regressions. Output is discarded so the

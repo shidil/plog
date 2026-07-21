@@ -42,6 +42,13 @@ This is a spike. It implements the four highest-leverage ideas from
   sniffed per line by default; `--format` pins it.
 - **Robust passthrough** — unrecognized or malformed lines are emitted
   verbatim; a bad line never interrupts the stream.
+- **Triage summary** (`--summary`) — appends a footer at EOF that answers "is
+  anything wrong?" up front: counts per *re-ranked* severity (`0 errors` is
+  the verdict), a time span, and one whole, untruncated representative line
+  per distinct warn/error template with its `×count`. Uniqueness uses the same
+  masking as folding; the stream above the footer is byte-identical with the
+  flag off. Passthrough lines are counted, never guessed at. (A follow never
+  reaches EOF, so under `-f` the footer prints only when the pipe closes.)
 - **Filtering** — `--min-level` (against the *re-ranked* level), `--grep` (a
   regexp over message and field values), and `--field key=val` (a repeatable
   substring match on any field you name) narrow the stream, combined with AND.
@@ -102,6 +109,8 @@ plog [flags]            # reads stdin, writes stdout
 --github string         link frames to source on github.com: owner/repo or
                         owner/repo@ref (ref default main); no local checkout
                         needed (TTY only)
+--summary               print a triage summary (severity counts + unique
+                        warn/error templates) after input ends
 --version               print version information and exit
 ```
 
